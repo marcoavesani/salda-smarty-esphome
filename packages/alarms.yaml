@@ -1,0 +1,104 @@
+# =============================================================================
+#  Allarmi (discrete input, FC02). Il numero del discrete input coincide con
+#  il codice mostrato dall'S-Touch (A.xx = allarme, W.xx = avviso).
+#  Solo i codici pertinenti a una Smarty (niente batterie ad acqua, DX, serrande
+#  tagliafuoco...). I singoli allarmi sono disabilitati di default in HA ma
+#  alimentano il sensore di testo "Allarmi attivi".
+#  I singoli codici sono letti un ciclo su tre (skip_updates: 2).
+# =============================================================================
+
+binary_sensor:
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Allarme critico
+    device_class: problem
+    register_type: discrete_input
+    address: 188
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Avviso attivo
+    device_class: problem
+    register_type: discrete_input
+    address: 189
+
+  # ---- Singoli codici ---------------------------------------------------------
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_3, address: 3, name: "W03 Protezione secchezza"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_4, address: 4, name: "W04 Antigelo scambiatore"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_5, address: 5, name: "A05 Antigelo: sistema fermo"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_8, address: 8, name: "W08 Temperatura mandata bassa"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_9, address: 9, name: "W09 Temperatura mandata alta"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_10, address: 10, name: "A10 Temperatura mandata bassa: sistema fermo"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_11, address: 11, name: "A11 Temperatura mandata alta: sistema fermo"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_14, address: 14, name: "W14 Sostituire filtri"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_15, address: 15, name: "A15 Guasto alimentazione (fusibile F1)"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_16, address: 16, name: "W16 Sonda mandata guasta"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_17, address: 17, name: "W17 Sonda ripresa guasta"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_18, address: 18, name: "W18 Sonda espulsione guasta"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_19, address: 19, name: "W19 Sonda esterna guasta"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_24, address: 24, name: "A24 Sonda mandata guasta: sistema fermo"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_25, address: 25, name: "A25 Sonda ripresa guasta: sistema fermo"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_26, address: 26, name: "A26 Sonda espulsione guasta: sistema fermo"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_27, address: 27, name: "A27 Sonda esterna guasta: sistema fermo"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_34, address: 34, name: "A34 Protezione manuale riscaldatore"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_35, address: 35, name: "W35 Protezione automatica riscaldatore"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_38, address: 38, name: "A38 Guasto ventilatore mandata"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_39, address: 39, name: "A39 Guasto ventilatore ripresa"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_44, address: 44, name: "A44 Errore interno"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_47, address: 47, name: "A47 Errore comunicazione interna"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_49, address: 49, name: "W49 Umidità media 3 giorni alta"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_50, address: 50, name: "W50 Umidità ripresa alta: boost"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_55, address: 55, name: "W55 Ventilatore mandata: funzionamento emergenza"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_56, address: 56, name: "W56 Ventilatore ripresa: funzionamento emergenza"}
+  - {platform: modbus_controller, modbus_controller_id: smarty, register_type: discrete_input, entity_category: diagnostic, disabled_by_default: true, device_class: problem, skip_updates: 2,
+     id: al_58, address: 58, name: "A58 Guasto serranda bypass"}
+
+text_sensor:
+  - platform: template
+    name: Allarmi attivi
+    icon: mdi:alert
+    update_interval: 15s
+    lambda: |-
+      binary_sensor::BinarySensor *const list[] = {
+          id(al_3), id(al_4), id(al_5), id(al_8), id(al_9), id(al_10), id(al_11),
+          id(al_14), id(al_15), id(al_16), id(al_17), id(al_18), id(al_19),
+          id(al_24), id(al_25), id(al_26), id(al_27), id(al_34), id(al_35),
+          id(al_38), id(al_39), id(al_44), id(al_47), id(al_49), id(al_50),
+          id(al_55), id(al_56), id(al_58)};
+      std::string out;
+      for (auto *b : list) {
+        if (b->has_state() && b->state) {
+          if (!out.empty()) out += "; ";
+          out += std::string(b->get_name());
+        }
+      }
+      if (out.empty()) out = "Nessuno";
+      if (out.size() > 250) out = out.substr(0, 247) + "...";
+      return out;

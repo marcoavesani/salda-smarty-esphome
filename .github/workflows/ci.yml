@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    name: Test su PC (parser, proxy, sniffer)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compila ed esegue i test
+        run: |
+          for t in frame proxy sniffer; do
+            g++ -std=c++17 -Wall -Wextra -Icomponents "tests/test_$t.cpp" -o "/tmp/test_$t"
+            "/tmp/test_$t"
+          done
+
+  esphome-config:
+    name: Validazione configurazioni ESPHome
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Installa ESPHome
+        run: pip install esphome==2025.12.3
+      - name: Segreti fittizi
+        run: |
+          KEY=$(python -c "import base64, os; print(base64.b64encode(os.urandom(32)).decode())")
+          sed "s|BASE64_DI_32_BYTE==|$KEY|" secrets.yaml.example > secrets.yaml
+      - name: esphome config
+        run: |
+          for f in salda-smarty*.yaml; do
+            echo "== $f"
+            esphome config "$f" > /dev/null
+          done

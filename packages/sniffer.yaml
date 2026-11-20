@@ -1,0 +1,65 @@
+# Misura del bus (solo ascolto), comune a tutte le schede.
+# Richiede le substitutions: bus_rx, bus_tx, modbus_baud, modbus_parity
+# e i componenti esterni salda_sniffer + salda_common (vedi README).
+
+uart:
+  id: uart_bus
+  rx_pin: ${bus_rx}
+  tx_pin: ${bus_tx}   # mai usato per trasmettere; definito così resta a riposo alto
+  baud_rate: ${modbus_baud}
+  parity: ${modbus_parity}
+  data_bits: 8
+  stop_bits: 1
+  rx_buffer_size: 1024
+
+salda_sniffer:
+  id: sniffer
+  uart_id: uart_bus
+  update_interval: 60s
+  frame_gap: 20ms
+  response_timeout: 500ms
+  log_registers: false
+  traffic:
+    name: Traffico Modbus
+  transactions_per_minute:
+    name: Transazioni pannello
+  gap_min:
+    name: Pausa minima bus
+  gap_avg:
+    name: Pausa media bus
+  latency_max:
+    name: Latenza max unità
+  bus_load:
+    name: Occupazione bus
+  no_response:
+    name: Richieste senza risposta
+  errors:
+    name: Errori di ricezione
+
+button:
+  - platform: template
+    name: Elenco richieste
+    icon: mdi:format-list-bulleted
+    entity_category: diagnostic
+    on_press:
+      - lambda: id(sniffer).dump_polls();
+  - platform: template
+    name: Valori registri
+    icon: mdi:table
+    entity_category: diagnostic
+    on_press:
+      - lambda: id(sniffer).dump_registers();
+  - platform: template
+    name: Azzera statistiche
+    icon: mdi:restore
+    entity_category: diagnostic
+    on_press:
+      - lambda: id(sniffer).reset_stats();
+  - platform: restart
+    name: Riavvia ESP
+    entity_category: diagnostic
+
+sensor:
+  - platform: wifi_signal
+    name: Segnale WiFi
+    update_interval: 60s

@@ -1,0 +1,236 @@
+# =============================================================================
+#  Comandi (holding register FC03/FC06, coil FC01/FC05).
+#  Le scritture vanno nella RAM del controller come quelle dell'S-Touch.
+#  Non usare mai i coil 51 (salva EEPROM), 52 (riavvio), 200 (reset fabbrica).
+# =============================================================================
+
+select:
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Modalità
+    icon: mdi:hvac
+    address: 1
+    value_type: U_WORD
+    optionsmap:
+      "Standby": 0
+      "Protezione edificio": 1
+      "Economy": 2
+      "Comfort": 3
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Inverno/Estate
+    icon: mdi:sun-snowflake-variant
+    entity_category: config
+    address: 15
+    skip_updates: 5
+    value_type: U_WORD
+    optionsmap:
+      "Estate": 0
+      "Inverno": 1
+      "Da calendario": 2
+      "Media esterna 3 giorni": 3
+
+number:
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Setpoint Comfort
+    icon: mdi:thermometer
+    address: 2
+    value_type: S_WORD
+    multiply: 10
+    min_value: 16
+    max_value: 30
+    step: 0.5
+    unit_of_measurement: "°C"
+    device_class: temperature
+    mode: box
+
+  # 0 = "risparmio energetico" (nessun riscaldamento). Valori validi: 0 oppure 16..30.
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Setpoint Economy
+    icon: mdi:thermometer-low
+    address: 4
+    value_type: S_WORD
+    multiply: 10
+    min_value: 0
+    max_value: 30
+    step: 0.5
+    unit_of_measurement: "°C"
+    device_class: temperature
+    mode: box
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Setpoint Protezione edificio
+    icon: mdi:thermometer-low
+    entity_category: config
+    address: 6
+    skip_updates: 5
+    value_type: S_WORD
+    multiply: 10
+    min_value: 0
+    max_value: 30
+    step: 0.5
+    unit_of_measurement: "°C"
+    device_class: temperature
+    mode: box
+
+  # Registro 3 "Air flow control by percents" (default 0). Comportamento non
+  # documentato nel dettaglio: disabilitato di default, provalo con cautela.
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Portata aria manuale
+    icon: mdi:fan-chevron-up
+    disabled_by_default: true
+    address: 3
+    value_type: U_WORD
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: slider
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Durata boost
+    icon: mdi:timer-cog-outline
+    entity_category: config
+    address: 14
+    skip_updates: 5
+    value_type: U_WORD
+    multiply: 60
+    min_value: 0
+    max_value: 300
+    step: 5
+    unit_of_measurement: min
+    mode: box
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Setpoint UR estate
+    icon: mdi:water-percent
+    entity_category: config
+    address: 21
+    skip_updates: 5
+    value_type: U_WORD
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: box
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Setpoint UR inverno
+    icon: mdi:water-percent
+    entity_category: config
+    address: 22
+    skip_updates: 5
+    value_type: U_WORD
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: box
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Soglia protezione secchezza
+    icon: mdi:water-off
+    entity_category: config
+    address: 24
+    skip_updates: 5
+    value_type: U_WORD
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: box
+
+switch:
+  # Coil 5 "Intensive air flow": 1 avvia il boost per la durata impostata.
+  # Scrivere 0 sul coil "non fa nulla" secondo la tabella, quindi per fermare
+  # il boost azzeriamo anche HR 107 (tempo residuo boost).
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    id: boost
+    name: Boost
+    icon: mdi:fan-plus
+    register_type: coil
+    address: 5
+    write_lambda: |-
+      if (!x) {
+        id(smarty)->queue_command(
+            modbus_controller::ModbusCommandItem::create_write_single_command(id(smarty), 107, 0));
+      }
+      return true;
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Raffrescamento notturno
+    icon: mdi:weather-night
+    entity_category: config
+    register_type: coil
+    address: 4
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Protezione secchezza
+    icon: mdi:water-off
+    entity_category: config
+    register_type: coil
+    address: 3
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Portata in base a UR ripresa
+    icon: mdi:water-percent
+    entity_category: config
+    register_type: coil
+    address: 8
+
+button:
+  - platform: template
+    name: Reset timer filtri
+    icon: mdi:air-filter
+    entity_category: config
+    on_press:
+      - lambda: |-
+          id(smarty)->queue_command(
+              modbus_controller::ModbusCommandItem::create_write_single_coil(id(smarty), 1, true));
+
+  - platform: template
+    name: Reset allarmi
+    icon: mdi:alarm-light-off-outline
+    on_press:
+      - lambda: |-
+          id(smarty)->queue_command(
+              modbus_controller::ModbusCommandItem::create_write_single_command(id(smarty), 202, 1));
+
+  # Imposta data/ora del controller da Home Assistant (HR 100..106 + coil 2).
+  - platform: template
+    name: Sincronizza orologio
+    icon: mdi:clock-check-outline
+    entity_category: config
+    on_press:
+      - lambda: |-
+          auto now = id(ha_time).now();
+          if (!now.is_valid()) {
+            ESP_LOGW("smarty", "Ora non ancora sincronizzata con Home Assistant");
+            return;
+          }
+          std::vector<uint16_t> regs = {
+              (uint16_t) (now.year % 100), (uint16_t) now.month, (uint16_t) now.day_of_month,
+              0,  // HR 103 riservato
+              (uint16_t) now.hour, (uint16_t) now.minute, (uint16_t) now.second};
+          id(smarty)->queue_command(
+              modbus_controller::ModbusCommandItem::create_write_multiple_command(id(smarty), 100, regs.size(), regs));
+          id(smarty)->queue_command(
+              modbus_controller::ModbusCommandItem::create_write_single_coil(id(smarty), 2, true));
+          ESP_LOGI("smarty", "Orologio impostato a %02d/%02d/%04d %02d:%02d", now.day_of_month, now.month, now.year, now.hour, now.minute);
+
+  - platform: restart
+    name: Riavvia ESP
+    entity_category: diagnostic

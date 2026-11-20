@@ -1,0 +1,9 @@
+secrets.yaml
+.esphome/
+test_frame
+test_proxy
+*.exe
+test_sniffer
+# Documenti Salda: non ridistribuire, scaricali da salda.lt
+*.xlsx
+*.pdf

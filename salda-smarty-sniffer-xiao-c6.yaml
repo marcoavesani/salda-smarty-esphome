@@ -1,0 +1,38 @@
+# =============================================================================
+#  Salda Smarty - MISURA DEL BUS (solo ascolto) - variante alternativa
+#  XIAO ESP32-C6 + una "RS485 Breakout Board for XIAO" collegata IN PARALLELO
+#  ai fili A/B/GND dell'S-Touch. Stessa funzione di salda-smarty-sniffer.yaml
+#  (Atom Lite + Atomic RS485 Base). Vedi README.md, sezione "Misura del bus".
+# =============================================================================
+
+substitutions:
+  name: salda-smarty-sniffer
+  friendly_name: VMC Salda Sniffer
+  board: seeed_xiao_esp32c6
+  bus_rx: GPIO23    # D5 = RS485_RX della scheda Seeed
+  bus_tx: GPIO22    # D4 = RS485_TX: configurato solo per tenerlo a riposo (alto)
+  bus_de: GPIO2     # D2 = DE (schede V1.1 / direzione software): tenuto basso = ricezione
+  modbus_baud: "19200"
+  modbus_parity: EVEN
+
+packages:
+  base: !include packages/base.yaml
+  sniffer: !include packages/sniffer.yaml
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [salda_sniffer, salda_common]
+
+logger:
+  level: INFO
+
+# Il pin DE della scheda (usato solo dalle V1.1 o in modalità software) deve
+# restare basso: con DE alto il transceiver trasmetterebbe sul bus.
+switch:
+  - platform: gpio
+    id: rs485_de
+    pin: ${bus_de}
+    restore_mode: ALWAYS_OFF
+    internal: true

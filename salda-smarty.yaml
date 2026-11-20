@@ -1,0 +1,54 @@
+# =============================================================================
+#  Salda Smarty 2X/3X/4X (controller MCB/miniMCB) -> ESPHome -> Home Assistant
+#  VARIANTE DIRETTA: l'ESP prende il posto dell'S-Touch (unico master sul bus).
+#  Per tenere anche il pannello usa salda-smarty-proxy.yaml.
+#
+#  Hardware: M5Stack Atom (Lite) + Atomic RS485 Base, Modbus RTU master.
+#  Mappa registri: tabella ufficiale Salda "MCB 1.29/1.30 Modbus table"; gli
+#  indirizzi della tabella sono usati tali e quali (vedi docs/registri.md).
+# =============================================================================
+
+substitutions:
+  name: salda-smarty
+  friendly_name: VMC Salda Smarty
+  board: m5stack-atom
+  # Atom Lite / Atom Matrix + Atomic RS485 Base. Per AtomS3/AtomS3 Lite: tx GPIO6, rx GPIO5.
+  uart_tx: GPIO19
+  uart_rx: GPIO22
+  # Parametri seriali della linea MCB: default 19200 baud, 8E1, indirizzo 1.
+  # Se non risponde prova parity NONE (alcuni manuali/gateway indicano 8N1).
+  modbus_address: "1"
+  modbus_baud: "19200"
+  modbus_parity: EVEN
+  update_interval: 10s
+
+packages:
+  base: !include packages/base.yaml
+  monitor: !include packages/monitor.yaml
+  controls: !include packages/controls.yaml
+  alarms: !include packages/alarms.yaml
+
+uart:
+  id: uart_rs485
+  tx_pin: ${uart_tx}
+  rx_pin: ${uart_rx}
+  baud_rate: ${modbus_baud}
+  parity: ${modbus_parity}
+  data_bits: 8
+  stop_bits: 1
+
+modbus:
+  id: modbus_bus
+  uart_id: uart_rs485
+  send_wait_time: 250ms
+  # L'Atomic RS485 Base commuta TX/RX da sola: niente flow_control_pin.
+  # Con un modulo MAX485 con DE/RE separati: flow_control_pin: GPIOxx
+
+modbus_controller:
+  - id: smarty
+    modbus_id: modbus_bus
+    address: ${modbus_address}
+    update_interval: ${update_interval}
+    command_throttle: 50ms
+    max_cmd_retries: 2
+    offline_skip_updates: 6

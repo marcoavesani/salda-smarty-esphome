@@ -1,0 +1,389 @@
+# =============================================================================
+#  Letture (input register, FC04) - stato, temperature, ventilatori, filtri.
+#  "register_count" su alcuni sensori serve solo a "scavalcare" i buchi
+#  così ESPHome legge un blocco unico invece di tante richieste separate.
+# =============================================================================
+
+sensor:
+  # ---- Blocco IR 1..30 -------------------------------------------------------
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    id: ir_system_state
+    internal: true
+    register_type: read
+    address: 1
+    value_type: U_WORD
+    on_value:
+      - text_sensor.template.publish:
+          id: system_state
+          state: !lambda |-
+            static const char *const STATES[] = {
+              "Standby", "Protezione edificio", "Economy", "Comfort",
+              "Funzionamento di emergenza", "Preparazione", "Apertura serrande",
+              "Boost", "Raffreddamento riscaldatori", "Chiusura serrande",
+              "Raffrescamento notturno", "Allarme critico", "Allarme incendio",
+              "Antigelo scambiatore", "Sostituire filtri",
+              "UR media 3 giorni < 30%: velocità limitata",
+              "Sbrinamento DX", "Test serranda tagliafuoco"};
+            int v = (int) x;
+            if (v >= 0 && v < 18) return std::string(STATES[v]);
+            return std::string("Sconosciuto (") + to_string(v) + ")";
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Versione software
+    entity_category: diagnostic
+    register_type: read
+    address: 2
+    value_type: U_WORD
+    accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Versione configurazione
+    entity_category: diagnostic
+    disabled_by_default: true
+    register_type: read
+    address: 3
+    register_count: 10   # scavalca IR 4..12 (data/ora interna)
+    value_type: U_WORD
+    accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Boost tempo residuo
+    icon: mdi:timer-sand
+    register_type: read
+    address: 13
+    register_count: 2    # scavalca IR 14
+    value_type: U_WORD
+    unit_of_measurement: min
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.0166667
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    id: ir_current_mode
+    internal: true
+    register_type: read
+    address: 15
+    value_type: U_WORD
+    on_value:
+      - text_sensor.template.publish:
+          id: current_mode
+          state: !lambda |-
+            static const char *const MODES[] = {
+              "Standby", "Protezione edificio", "Economy", "Comfort", "Boost"};
+            int v = (int) x;
+            if (v >= 0 && v < 5) return std::string(MODES[v]);
+            return std::string("Sconosciuto (") + to_string(v) + ")";
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Portata aria attuale
+    icon: mdi:fan
+    register_type: read
+    address: 16
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    state_class: measurement
+    accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Temperatura mandata richiesta
+    register_type: read
+    address: 17
+    value_type: S_WORD
+    device_class: temperature
+    state_class: measurement
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Temperatura mandata (T1)
+    register_type: read
+    address: 18
+    value_type: S_WORD
+    device_class: temperature
+    state_class: measurement
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Temperatura ripresa (T2)
+    register_type: read
+    address: 19
+    value_type: S_WORD
+    device_class: temperature
+    state_class: measurement
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Temperatura espulsione (T3)
+    register_type: read
+    address: 20
+    value_type: S_WORD
+    device_class: temperature
+    state_class: measurement
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Temperatura esterna (T4)
+    register_type: read
+    address: 21
+    value_type: S_WORD
+    device_class: temperature
+    state_class: measurement
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  # Sensori UR/CO2 opzionali (A1 = mandata, A2 = ripresa). Disabilitati di
+  # default in HA: abilitali se la tua unità ha i sensori installati.
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Umidità mandata
+    disabled_by_default: true
+    register_type: read
+    address: 22
+    value_type: U_WORD
+    device_class: humidity
+    state_class: measurement
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: CO2 mandata
+    disabled_by_default: true
+    register_type: read
+    address: 23
+    value_type: U_WORD
+    device_class: carbon_dioxide
+    state_class: measurement
+    unit_of_measurement: ppm
+    accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Umidità ripresa
+    disabled_by_default: true
+    register_type: read
+    address: 24
+    value_type: U_WORD
+    device_class: humidity
+    state_class: measurement
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: CO2 ripresa
+    disabled_by_default: true
+    register_type: read
+    address: 25
+    register_count: 3    # scavalca IR 26..27 (prossimo evento scheduler)
+    value_type: U_WORD
+    device_class: carbon_dioxide
+    state_class: measurement
+    unit_of_measurement: ppm
+    accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Allarmi attivi (numero)
+    icon: mdi:alert-circle-outline
+    entity_category: diagnostic
+    register_type: read
+    address: 28
+    register_count: 2    # scavalca IR 29
+    value_type: U_WORD
+    accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Filtri giorni residui
+    icon: mdi:air-filter
+    register_type: read
+    address: 30
+    value_type: U_WORD
+    unit_of_measurement: d
+    accuracy_decimals: 0
+
+  # ---- Blocco IR 55..64: ventilatori ----------------------------------------
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Ventilatore mandata giri
+    icon: mdi:fan
+    register_type: read
+    address: 55
+    value_type: U_WORD
+    unit_of_measurement: rpm
+    state_class: measurement
+    accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Ventilatore ripresa giri
+    icon: mdi:fan
+    register_type: read
+    address: 56
+    register_count: 2    # scavalca IR 57 (uscita AO1 in volt)
+    value_type: U_WORD
+    unit_of_measurement: rpm
+    state_class: measurement
+    accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Ventilatore mandata portata
+    icon: mdi:fan
+    register_type: read
+    address: 58
+    register_count: 2    # scavalca IR 59 (pressione condotto)
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Portata mandata
+    icon: mdi:weather-windy
+    register_type: read
+    address: 60
+    register_count: 2    # scavalca IR 61
+    value_type: U_WORD
+    unit_of_measurement: "m³/h"
+    device_class: volume_flow_rate
+    state_class: measurement
+    accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Ventilatore ripresa portata
+    icon: mdi:fan
+    register_type: read
+    address: 62
+    register_count: 2    # scavalca IR 63
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Portata ripresa
+    icon: mdi:weather-windy
+    register_type: read
+    address: 64
+    value_type: U_WORD
+    unit_of_measurement: "m³/h"
+    device_class: volume_flow_rate
+    state_class: measurement
+    accuracy_decimals: 0
+
+  # ---- Valori lenti (letti ogni 3 cicli) ------------------------------------
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Posizione bypass
+    icon: mdi:valve
+    register_type: read
+    address: 93
+    skip_updates: 2
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Temperatura scambiatore
+    disabled_by_default: true
+    register_type: read
+    address: 104
+    skip_updates: 2
+    value_type: S_WORD
+    device_class: temperature
+    state_class: measurement
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Efficienza recupero calore
+    icon: mdi:heat-wave
+    register_type: read
+    address: 125
+    skip_updates: 2
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    state_class: measurement
+    accuracy_decimals: 0
+
+  - platform: wifi_signal
+    name: Segnale WiFi
+    update_interval: 60s
+
+  - platform: uptime
+    name: Uptime
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: template
+    id: system_state
+    name: Stato sistema
+    icon: mdi:state-machine
+
+  - platform: template
+    id: current_mode
+    name: Modalità attuale
+    icon: mdi:hvac
+
+binary_sensor:
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Stagione riscaldamento
+    icon: mdi:snowflake-thermometer
+    register_type: discrete_input
+    address: 207
+    skip_updates: 5
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Raffrescamento notturno attivo
+    icon: mdi:weather-night
+    register_type: discrete_input
+    address: 209
+    skip_updates: 5
+
+  - platform: status
+    name: Connessione ESP

@@ -1,0 +1,101 @@
+# =============================================================================
+#  Salda Smarty 2X/3X/4X -> ESPHome -> Home Assistant
+#  VARIANTE PROXY: l'S-Touch resta al suo posto. L'ESP si inserisce nel cavo
+#  tra pannello e unità con due porte RS485 e inoltra il traffico del pannello,
+#  inserendo le richieste di Home Assistant negli spazi liberi.
+#
+#     S-Touch ==[RS485 "pannello"]== Atom ==[RS485 "unità"]== Smarty (X18)
+#        \________________ +24 V / GND passanti _______________/
+#
+#  Hardware: M5Stack Atom Lite
+#    - porta unità:    Atomic RS485 Base       (GPIO19 TX, GPIO22 RX)
+#    - porta pannello: modulo RS485 sul Grove  (GPIO26 / GPIO32), es. M5 Unit RS485
+#  Vedi README.md, sezione "Proxy".
+# =============================================================================
+
+substitutions:
+  name: salda-smarty
+  friendly_name: VMC Salda Smarty
+  board: m5stack-atom
+  # Porta verso l'unità (Atomic RS485 Base)
+  unit_tx: GPIO19
+  unit_rx: GPIO22
+  # Porta verso l'S-Touch (Grove). Se il pannello non viene visto, scambia i due pin.
+  panel_tx: GPIO26
+  panel_rx: GPIO32
+  # Parametri seriali: devono coincidere su entrambi i lati (default S-Touch/MCB: 19200 8E1).
+  modbus_address: "1"
+  modbus_baud: "19200"
+  modbus_parity: EVEN
+  update_interval: 10s
+
+packages:
+  base: !include packages/base.yaml
+  monitor: !include packages/monitor.yaml
+  controls: !include packages/controls.yaml
+  alarms: !include packages/alarms.yaml
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [salda_proxy, salda_common]
+
+uart:
+  - id: uart_unit
+    tx_pin: ${unit_tx}
+    rx_pin: ${unit_rx}
+    baud_rate: ${modbus_baud}
+    parity: ${modbus_parity}
+    data_bits: 8
+    stop_bits: 1
+    rx_buffer_size: 512
+  - id: uart_panel
+    tx_pin: ${panel_tx}
+    rx_pin: ${panel_rx}
+    baud_rate: ${modbus_baud}
+    parity: ${modbus_parity}
+    data_bits: 8
+    stop_bits: 1
+    rx_buffer_size: 512
+    # Modulo RS485 con pin DE/RE invece della commutazione automatica:
+    # flow_control_pin: GPIOxx
+
+salda_proxy:
+  id: proxy
+  unit_uart_id: uart_unit
+  panel_uart_id: uart_panel
+  response_timeout: 500ms   # attesa massima della risposta dell'unità
+  local_expire: 1200ms      # deve restare sotto send_wait_time qui sotto
+  update_interval: 30s
+  panel_connected:
+    name: Pannello S-Touch collegato
+  unit_connected:
+    name: Unità collegata
+  panel_requests:
+    name: Proxy richieste pannello
+    disabled_by_default: true
+  local_requests:
+    name: Proxy richieste HA
+    disabled_by_default: true
+  timeouts:
+    name: Proxy timeout unità
+  errors:
+    name: Proxy errori
+  panel_latency:
+    name: Proxy latenza pannello max
+
+# Il componente modbus parla con la UART virtuale del proxy, non con una porta fisica.
+modbus:
+  id: modbus_bus
+  uart_id: proxy
+  send_wait_time: 1500ms
+
+modbus_controller:
+  - id: smarty
+    modbus_id: modbus_bus
+    address: ${modbus_address}
+    update_interval: ${update_interval}
+    command_throttle: 50ms
+    max_cmd_retries: 2
+    offline_skip_updates: 6

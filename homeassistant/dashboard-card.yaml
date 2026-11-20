@@ -1,0 +1,48 @@
+# Card Lovelace di esempio (modifica dashboard -> aggiungi card -> manuale).
+# Gli entity_id assumono friendly_name "VMC Salda Smarty": adattali se l'hai cambiato.
+type: vertical-stack
+cards:
+  - type: tile
+    entity: sensor.vmc_salda_smarty_stato_sistema
+    name: VMC
+    icon: mdi:hvac
+  - type: tile
+    entity: select.vmc_salda_smarty_modalita
+    features:
+      - type: select-options
+  - type: horizontal-stack
+    cards:
+      - type: button
+        entity: switch.vmc_salda_smarty_boost
+        name: Boost
+        icon: mdi:fan-plus
+        tap_action:
+          action: toggle
+      - type: entity
+        entity: sensor.vmc_salda_smarty_boost_tempo_residuo
+        name: Residuo
+  - type: glance
+    title: Temperature
+    columns: 4
+    entities:
+      - entity: sensor.vmc_salda_smarty_temperatura_esterna_t4
+        name: Esterna
+      - entity: sensor.vmc_salda_smarty_temperatura_mandata_t1
+        name: Mandata
+      - entity: sensor.vmc_salda_smarty_temperatura_ripresa_t2
+        name: Ripresa
+      - entity: sensor.vmc_salda_smarty_temperatura_espulsione_t3
+        name: Espulsione
+  - type: entities
+    entities:
+      - entity: number.vmc_salda_smarty_setpoint_comfort
+      - entity: number.vmc_salda_smarty_setpoint_economy
+      - entity: sensor.vmc_salda_smarty_portata_aria_attuale
+      - entity: sensor.vmc_salda_smarty_portata_mandata
+      - entity: sensor.vmc_salda_smarty_portata_ripresa
+      - entity: sensor.vmc_salda_smarty_posizione_bypass
+      - entity: sensor.vmc_salda_smarty_efficienza_recupero_calore
+      - entity: sensor.vmc_salda_smarty_filtri_giorni_residui
+      - entity: sensor.vmc_salda_smarty_allarmi_attivi
+      - entity: button.vmc_salda_smarty_reset_allarmi
+      - entity: button.vmc_salda_smarty_reset_timer_filtri

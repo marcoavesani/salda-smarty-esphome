@@ -1,0 +1,113 @@
+# =============================================================================
+#  Salda Smarty 2X/3X/4X -> ESPHome -> Home Assistant
+#  VARIANTE PROXY su Seeed XIAO ESP32-C6 + due "RS485 Breakout Board for XIAO".
+#
+#     S-Touch ==[scheda 2]== XIAO ESP32-C6 ==[scheda 1]== Smarty (X18)
+#        \_____________ +24 V / GND passanti _____________/
+#
+#  Scheda 1 (XIAO inserita, lato Smarty): usa D4 (TX) e D5 (RX) della XIAO.
+#  Scheda 2 (cablata, lato S-Touch): zoccoli della scheda 2 -> pin della XIAO
+#      D4 (TX)  <- D6 / GPIO16
+#      D5 (RX)  -> D7 / GPIO17
+#      D2 (DE)  <- D8 / GPIO19   solo per schede V1.1 o in modalità software
+#      3V3, GND -> 3V3, GND      (il transceiver TP8485E è alimentato dal 3V3 della XIAO;
+#                                 il 5V NON va collegato tra le due schede)
+#  Alimenta solo la scheda 1 con 12 V (o 5 V). MAI i 24 V della Smarty sul
+#  morsetto 12V: all'ingresso c'è un TVS SMBJ15CA (conduce da ~16,7 V) e
+#  condensatori da 25 V. Serve un convertitore 24 -> 12 V. Il morsetto di
+#  alimentazione non ha GND: la massa passa dal pin GND del morsetto RS485.
+#  Dettagli in README.md, sezione "Proxy su XIAO ESP32-C6".
+# =============================================================================
+
+substitutions:
+  name: salda-smarty
+  friendly_name: VMC Salda Smarty
+  board: seeed_xiao_esp32c6
+  # Porta verso l'unità: scheda RS485 1 (XIAO inserita)
+  unit_tx: GPIO22   # D4
+  unit_rx: GPIO23   # D5
+  # Porta verso l'S-Touch: scheda RS485 2 (cablata). Se il pannello non viene
+  # visto, scambia i due pin.
+  panel_tx: GPIO16  # D6 -> zoccolo D4 della scheda 2
+  panel_rx: GPIO17  # D7 -> zoccolo D5 della scheda 2
+  # Parametri seriali: devono coincidere su entrambi i lati (default S-Touch/MCB: 19200 8E1).
+  modbus_address: "1"
+  modbus_baud: "19200"
+  modbus_parity: EVEN
+  update_interval: 10s
+
+packages:
+  base: !include packages/base.yaml
+  monitor: !include packages/monitor.yaml
+  controls: !include packages/controls.yaml
+  alarms: !include packages/alarms.yaml
+
+# Il logger della C6 usa la USB integrata (USB_SERIAL_JTAG): le due UART
+# hardware restano libere per le porte RS485.
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [salda_proxy, salda_common]
+
+uart:
+  - id: uart_unit
+    tx_pin: ${unit_tx}
+    rx_pin: ${unit_rx}
+    baud_rate: ${modbus_baud}
+    parity: ${modbus_parity}
+    data_bits: 8
+    stop_bits: 1
+    rx_buffer_size: 512
+    # Scheda V1.1 o configurata con direzione software: DE su D2
+    # flow_control_pin: GPIO2
+  - id: uart_panel
+    tx_pin: ${panel_tx}
+    rx_pin: ${panel_rx}
+    baud_rate: ${modbus_baud}
+    parity: ${modbus_parity}
+    data_bits: 8
+    stop_bits: 1
+    rx_buffer_size: 512
+    # Scheda V1.1 o configurata con direzione software: zoccolo D2 della scheda 2 su D8
+    # flow_control_pin: GPIO19
+
+salda_proxy:
+  id: proxy
+  unit_uart_id: uart_unit
+  panel_uart_id: uart_panel
+  response_timeout: 500ms   # attesa massima della risposta dell'unità
+  local_expire: 1200ms      # deve restare sotto send_wait_time qui sotto
+  update_interval: 30s
+  panel_connected:
+    name: Pannello S-Touch collegato
+  unit_connected:
+    name: Unità collegata
+  panel_requests:
+    name: Proxy richieste pannello
+    disabled_by_default: true
+  local_requests:
+    name: Proxy richieste HA
+    disabled_by_default: true
+  timeouts:
+    name: Proxy timeout unità
+  errors:
+    name: Proxy errori
+  panel_latency:
+    name: Proxy latenza pannello max
+
+# Il componente modbus parla con la UART virtuale del proxy, non con una porta fisica.
+modbus:
+  id: modbus_bus
+  uart_id: proxy
+  send_wait_time: 1500ms
+
+modbus_controller:
+  - id: smarty
+    modbus_id: modbus_bus
+    address: ${modbus_address}
+    update_interval: ${update_interval}
+    command_throttle: 50ms
+    max_cmd_retries: 2
+    offline_skip_updates: 6
