@@ -1,6 +1,6 @@
 # =============================================================================
 #  Salda Smarty - MISURA DEL BUS (solo ascolto)
-#  M5Stack Atom Lite + Atomic RS485 Base, collegata IN PARALLELO ai fili
+#  M5Stack AtomS3 (Lite) + Atomic RS485 Base, collegata IN PARALLELO ai fili
 #  A/B/GND dell'S-Touch. L'ESP non trasmette mai: misura ogni quanto il pannello
 #  interroga l'unità, quali registri legge, le pause sul bus e la latenza
 #  dell'unità, e decodifica i valori che passano.
@@ -14,10 +14,12 @@
 substitutions:
   name: salda-smarty-sniffer
   friendly_name: VMC Salda Sniffer
-  board: m5stack-atom
-  # Atomic RS485 Base su Atom Lite. Per AtomS3/AtomS3 Lite: bus_rx GPIO5, bus_tx GPIO6.
-  bus_rx: GPIO22
-  bus_tx: GPIO19   # la base commuta TX/RX da sola: con TX a riposo resta in ricezione
+  # AtomS3 / AtomS3 Lite (ESP32-S3). Per il vecchio Atom Lite (ESP32):
+  # board m5stack-atom, bus_rx GPIO22, bus_tx GPIO19, atom_button GPIO39.
+  board: m5stack-atoms3
+  bus_rx: GPIO5
+  bus_tx: GPIO6    # la base commuta TX/RX da sola: con TX a riposo resta in ricezione
+  atom_button: GPIO41
   # Parametri del bus S-Touch <-> unità (default 19200 8E1). Se lo sniffer
   # segnala solo errori, prova parity NONE.
   modbus_baud: "19200"
@@ -40,7 +42,7 @@ binary_sensor:
   - platform: gpio
     id: atom_button
     pin:
-      number: GPIO39
+      number: ${atom_button}
       inverted: true
     internal: true
     on_press:

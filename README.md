@@ -14,7 +14,7 @@
 
 Controllo completo di una **Salda Smarty 2X** (scheda **miniMCB**, valido anche per 3X/4X) da Home Assistant tramite un **M5Stack Atom + Atomic RS485 Base** con ESPHome, in Modbus RTU sulla stessa porta usata dal pannello **S-Touch**.
 
-**Hardware in uso:** M5Stack **Atom Lite** + **Atomic RS485 Base**, cioè una sola interfaccia RS485. Le varianti per XIAO ESP32-C6 e quelle con due porte (proxy) restano come alternative.
+**Hardware in uso:** M5Stack **AtomS3 Lite** (ESP32-S3) + **Atomic RS485 Base**, cioè una sola interfaccia RS485. Le varianti per XIAO ESP32-C6 e quelle con due porte (proxy) restano come alternative.
 
 **Percorso:**
 
@@ -32,12 +32,12 @@ Non serve copiare nulla nella cartella ESPHome, per esempio quella dell'add-on d
 
 ### Misura del bus
 
-Esempio per Atom Lite + Atomic RS485 Base, in un file tuo nella cartella ESPHome:
+Esempio per AtomS3 Lite + Atomic RS485 Base, in un file tuo nella cartella ESPHome. Con il vecchio Atom Lite (ESP32) usa `board: m5stack-atom`, `bus_rx: GPIO22`, `bus_tx: GPIO19`.
 
 ```yaml
 substitutions:
-  bus_rx: GPIO22        # Atom Lite + Atomic RS485 Base
-  bus_tx: GPIO19
+  bus_rx: GPIO5         # AtomS3 (Lite) + Atomic RS485 Base
+  bus_tx: GPIO6
   modbus_baud: "19200"
   modbus_parity: EVEN
 
@@ -46,7 +46,7 @@ esphome:
   friendly_name: VMC Salda Sniffer
 
 esp32:
-  board: m5stack-atom
+  board: m5stack-atoms3
   framework:
     type: esp-idf
 
@@ -161,7 +161,7 @@ Fonti: manuale miniMCB v2024.1 e manuale SMARTY X v2026.1.
 
 ## Misura del bus (sniffer, solo ascolto)
 
-`salda-smarty-sniffer.yaml`: Atom Lite + Atomic RS485 Base, collegata **in parallelo** ai fili A/B/GND dell'S-Touch. L'ESP **non trasmette mai**, quindi non può disturbare né il pannello né l'unità.
+`salda-smarty-sniffer.yaml`: AtomS3 (Lite) + Atomic RS485 Base, collegata **in parallelo** ai fili A/B/GND dell'S-Touch. L'ESP **non trasmette mai**, quindi non può disturbare né il pannello né l'unità.
 
 Alternativa: `salda-smarty-sniffer-xiao-c6.yaml`, con XIAO ESP32-C6 e una RS485 Breakout Board Seeed. Le due varianti condividono `packages/sniffer.yaml`.
 
@@ -180,9 +180,9 @@ Serve a capire se un secondo master può stare sulla stessa linea del pannello, 
 - **In Home Assistant:**
   - entità diagnostiche: transazioni/min, pausa minima e media, latenza max, occupazione, errori;
   - pulsanti: **Elenco richieste**, **Valori registri**, **Azzera statistiche**.
-- **Senza Home Assistant:** sull'Atom Lite il pulsante sotto il LED stampa subito nel log l'elenco delle richieste.
+- **Senza Home Assistant:** il pulsante dell'Atom (GPIO41 sull'AtomS3, GPIO39 sull'Atom Lite) stampa subito nel log l'elenco delle richieste.
 
-### Collegamento (Atom Lite + Atomic RS485 Base)
+### Collegamento (AtomS3 + Atomic RS485 Base)
 
 ```
  S-Touch morsetti:  5 = A   4 = B   3 = GND   1-2 = +24 V
@@ -192,7 +192,7 @@ Serve a capire se un secondo master può stare sulla stessa linea del pannello, 
 
 - **Bus:** A, B e GND della base in parallelo a quelli dell'S-Touch. In alternativa collegati sulla X18 (4 = A, 5 = B, 6 = GND).
 - **Alimentazione:** dalla USB-C dell'Atom, oppure dai 24 V del cavo del pannello sul polo di alimentazione della base. La base accetta 6–24 V: misura prima la tensione.
-- **Ricezione garantita:** la base non ha resistenza di terminazione, quindi in parallelo non altera la linea. Il pin TX (GPIO19) resta a riposo e la base resta in ricezione.
+- **Ricezione garantita:** la base non ha resistenza di terminazione, quindi in parallelo non altera la linea. Il pin TX (GPIO6 sull'AtomS3, GPIO19 sull'Atom Lite) resta a riposo e la base resta in ricezione.
 - **Errori di ricezione:** se lo sniffer vede solo errori, prova `modbus_parity: NONE`, poi a scambiare A e B.
 
 ### Collegamento (variante XIAO ESP32-C6 + scheda Seeed)
