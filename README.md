@@ -115,7 +115,7 @@ time:
     id: ha_time
 
 external_components:
-  - source: github://marcoavesani/salda-smarty-esphome@v0.4.1
+  - source: github://marcoavesani/salda-smarty-esphome@v0.4.2
     components: [salda_bus, salda_common]
 
 uart:
@@ -146,7 +146,7 @@ modbus_controller:
 packages:
   smarty:
     url: https://github.com/marcoavesani/salda-smarty-esphome
-    ref: v0.4.1
+    ref: v0.4.2
     files:
       - packages/monitor.yaml
       - packages/controls.yaml
