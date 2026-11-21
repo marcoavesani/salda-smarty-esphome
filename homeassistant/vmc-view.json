@@ -1,0 +1,584 @@
+{
+ "title": "VMC",
+ "path": "vmc",
+ "icon": "mdi:hvac",
+ "type": "sections",
+ "max_columns": 3,
+ "sections": [
+  {
+   "type": "grid",
+   "cards": [
+    {
+     "type": "heading",
+     "heading": "Stato",
+     "icon": "mdi:hvac",
+     "badges": [
+      {
+       "type": "entity",
+       "entity": "binary_sensor.quadro_elettrico_vmc_salda_smarty_pannello_s_touch_attivo",
+       "show_state": true,
+       "show_icon": true,
+       "color": "green"
+      }
+     ]
+    },
+    {
+     "type": "tile",
+     "entity": "sensor.quadro_elettrico_vmc_salda_smarty_stato_sistema",
+     "name": "Stato",
+     "icon": "mdi:state-machine",
+     "grid_options": {
+      "columns": "full"
+     },
+     "vertical": false
+    },
+    {
+     "type": "tile",
+     "entity": "select.quadro_elettrico_vmc_salda_smarty_modalita",
+     "name": "Modalità",
+     "icon": "mdi:fan",
+     "grid_options": {
+      "columns": "full"
+     },
+     "features": [
+      {
+       "type": "select-options"
+      }
+     ]
+    },
+    {
+     "type": "tile",
+     "entity": "switch.quadro_elettrico_vmc_salda_smarty_boost",
+     "name": "Boost",
+     "icon": "mdi:fan-plus",
+     "grid_options": {
+      "columns": "full"
+     },
+     "features": [
+      {
+       "type": "toggle"
+      }
+     ],
+     "features_position": "inline"
+    },
+    {
+     "type": "tile",
+     "entity": "sensor.quadro_elettrico_vmc_salda_smarty_boost_tempo_residuo",
+     "name": "Boost residuo",
+     "icon": "mdi:timer-sand"
+    },
+    {
+     "type": "tile",
+     "entity": "sensor.quadro_elettrico_vmc_salda_smarty_ventilatore_mandata_portata",
+     "name": "Ventilatori",
+     "icon": "mdi:fan"
+    },
+    {
+     "type": "tile",
+     "entity": "number.quadro_elettrico_vmc_salda_smarty_portata_aria",
+     "name": "Portata",
+     "icon": "mdi:fan-chevron-up",
+     "grid_options": {
+      "columns": "full"
+     },
+     "features": [
+      {
+       "type": "numeric-input",
+       "style": "buttons"
+      }
+     ],
+     "features_position": "inline"
+    },
+    {
+     "type": "tile",
+     "entity": "number.quadro_elettrico_vmc_salda_smarty_setpoint_comfort",
+     "name": "Setpoint Comfort",
+     "icon": "mdi:thermometer",
+     "grid_options": {
+      "columns": "full"
+     },
+     "features": [
+      {
+       "type": "numeric-input",
+       "style": "buttons"
+      }
+     ],
+     "features_position": "inline"
+    },
+    {
+     "type": "tile",
+     "entity": "number.quadro_elettrico_vmc_salda_smarty_setpoint_economy",
+     "name": "Setpoint Economy",
+     "icon": "mdi:thermometer-low",
+     "grid_options": {
+      "columns": "full"
+     },
+     "features": [
+      {
+       "type": "numeric-input",
+       "style": "buttons"
+      }
+     ],
+     "features_position": "inline"
+    },
+    {
+     "type": "tile",
+     "entity": "sensor.quadro_elettrico_vmc_salda_smarty_temperatura_mandata_richiesta",
+     "name": "Mandata richiesta",
+     "icon": "mdi:thermometer-check",
+     "grid_options": {
+      "columns": "full"
+     }
+    }
+   ]
+  },
+  {
+   "type": "grid",
+   "column_span": 2,
+   "cards": [
+    {
+     "type": "heading",
+     "heading": "Flussi d'aria",
+     "icon": "mdi:swap-horizontal-bold"
+    },
+    {
+     "type": "picture-elements",
+     "image": "data:image/svg+xml,%3Csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1000 520\" font-family=\"Roboto, 'Segoe UI', Arial, sans-serif\"%3E %3Cdefs%3E %3Cpattern id=\"hatch\" width=\"10\" height=\"10\" patternUnits=\"userSpaceOnUse\" patternTransform=\"rotate(45)\"%3E %3Cline x1=\"0\" y1=\"0\" x2=\"0\" y2=\"10\" stroke=\"%238a94a6\" stroke-opacity=\"0.35\" stroke-width=\"3\"/%3E %3C/pattern%3E %3ClinearGradient id=\"g-in\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"%3E %3Cstop offset=\"0\" stop-color=\"%233ccf91\"/%3E %3Cstop offset=\"1\" stop-color=\"%234aa3ff\"/%3E %3C/linearGradient%3E %3ClinearGradient id=\"g-out\" x1=\"1\" y1=\"0\" x2=\"0\" y2=\"1\"%3E %3Cstop offset=\"0\" stop-color=\"%23f5c542\"/%3E %3Cstop offset=\"1\" stop-color=\"%23ff9a3c\"/%3E %3C/linearGradient%3E %3C/defs%3E  %3Ctext x=\"40\" y=\"42\" font-size=\"18\" letter-spacing=\"3\" fill=\"%238a94a6\"%3EFUORI%3C/text%3E %3Ctext x=\"960\" y=\"42\" font-size=\"18\" letter-spacing=\"3\" fill=\"%238a94a6\" text-anchor=\"end\"%3EIN CASA%3C/text%3E %3Ctext x=\"40\" y=\"92\" font-size=\"24\" font-weight=\"600\" fill=\"%233ccf91\"%3EEsterno%3C/text%3E %3Ctext x=\"960\" y=\"92\" font-size=\"24\" font-weight=\"600\" fill=\"%23f5c542\" text-anchor=\"end\"%3ERipresa%3C/text%3E %3Ctext x=\"40\" y=\"505\" font-size=\"24\" font-weight=\"600\" fill=\"%23ff9a3c\"%3EEspulsione%3C/text%3E %3Ctext x=\"960\" y=\"505\" font-size=\"24\" font-weight=\"600\" fill=\"%234aa3ff\" text-anchor=\"end\"%3EMandata%3C/text%3E  %3Crect x=\"430\" y=\"8\" width=\"140\" height=\"62\" fill=\"url(%23hatch)\"/%3E %3Crect x=\"430\" y=\"450\" width=\"140\" height=\"62\" fill=\"url(%23hatch)\"/%3E %3Crect x=\"370\" y=\"70\" width=\"260\" height=\"380\" rx=\"34\" fill=\"%238a94a6\" fill-opacity=\"0.08\" stroke=\"%238a94a6\" stroke-opacity=\"0.45\" stroke-width=\"3\"/%3E %3Ctext x=\"500\" y=\"108\" font-size=\"18\" letter-spacing=\"3\" fill=\"%238a94a6\" text-anchor=\"middle\"%3ESMARTY%3C/text%3E  %3Cpolygon points=\"500,170 600,270 500,370 400,270\" fill=\"%238a94a6\" fill-opacity=\"0.12\" stroke=\"%238a94a6\" stroke-opacity=\"0.6\" stroke-width=\"3\"/%3E %3Cg stroke=\"%238a94a6\" stroke-opacity=\"0.35\" stroke-width=\"2\"%3E %3Cline x1=\"460\" y1=\"210\" x2=\"540\" y2=\"210\"/%3E %3Cline x1=\"430\" y1=\"240\" x2=\"570\" y2=\"240\"/%3E %3Cline x1=\"400\" y1=\"270\" x2=\"600\" y2=\"270\"/%3E %3Cline x1=\"430\" y1=\"300\" x2=\"570\" y2=\"300\"/%3E %3Cline x1=\"460\" y1=\"330\" x2=\"540\" y2=\"330\"/%3E %3C/g%3E  %3Cpolyline points=\"40,170 385,170 455,240 545,330 615,370 900,370\" fill=\"none\" stroke=\"url(%23g-in)\" stroke-width=\"16\" stroke-linejoin=\"round\" stroke-opacity=\"0.9\"/%3E %3Cpolyline points=\"40,170 385,170\" fill=\"none\" stroke=\"%233ccf91\" stroke-width=\"16\"/%3E %3Cpolyline points=\"615,370 900,370\" fill=\"none\" stroke=\"%234aa3ff\" stroke-width=\"16\"/%3E %3Cpolygon points=\"900,346 960,370 900,394\" fill=\"%234aa3ff\"/%3E %3Cpolygon points=\"300,150 340,170 300,190\" fill=\"%233ccf91\"/%3E  %3Cpolyline points=\"960,170 615,170 545,240 455,330 385,370 100,370\" fill=\"none\" stroke=\"url(%23g-out)\" stroke-width=\"16\" stroke-linejoin=\"round\" stroke-opacity=\"0.9\"/%3E %3Cpolyline points=\"960,170 615,170\" fill=\"none\" stroke=\"%23f5c542\" stroke-width=\"16\"/%3E %3Cpolyline points=\"385,370 100,370\" fill=\"none\" stroke=\"%23ff9a3c\" stroke-width=\"16\"/%3E %3Cpolygon points=\"100,346 40,370 100,394\" fill=\"%23ff9a3c\"/%3E %3Cpolygon points=\"700,150 660,170 700,190\" fill=\"%23f5c542\"/%3E  %3Crect x=\"352\" y=\"146\" width=\"18\" height=\"48\" rx=\"5\" fill=\"%23ff5a5a\" fill-opacity=\"0.25\" stroke=\"%23ff5a5a\" stroke-width=\"3\"/%3E %3Crect x=\"630\" y=\"146\" width=\"18\" height=\"48\" rx=\"5\" fill=\"%238a94a6\" fill-opacity=\"0.25\" stroke=\"%238a94a6\" stroke-width=\"3\"/%3E  %3Cg transform=\"translate(330 370)\"%3E %3Ccircle r=\"30\" fill=\"%23ff9a3c\" fill-opacity=\"0.15\" stroke=\"%23ff9a3c\" stroke-width=\"4\"/%3E %3Cg fill=\"%23ff9a3c\"%3E%3Cellipse cx=\"0\" cy=\"-12\" rx=\"7\" ry=\"13\" transform=\"rotate(0)\"/%3E%3Cellipse cx=\"0\" cy=\"-12\" rx=\"7\" ry=\"13\" transform=\"rotate(120)\"/%3E%3Cellipse cx=\"0\" cy=\"-12\" rx=\"7\" ry=\"13\" transform=\"rotate(240)\"/%3E%3C/g%3E %3Ccircle r=\"4\" fill=\"%23ff9a3c\"/%3E %3C/g%3E %3Cg transform=\"translate(670 370)\"%3E %3Ccircle r=\"30\" fill=\"%234aa3ff\" fill-opacity=\"0.15\" stroke=\"%234aa3ff\" stroke-width=\"4\"/%3E %3Cg fill=\"%234aa3ff\"%3E%3Cellipse cx=\"0\" cy=\"-12\" rx=\"7\" ry=\"13\" transform=\"rotate(0)\"/%3E%3Cellipse cx=\"0\" cy=\"-12\" rx=\"7\" ry=\"13\" transform=\"rotate(120)\"/%3E%3Cellipse cx=\"0\" cy=\"-12\" rx=\"7\" ry=\"13\" transform=\"rotate(240)\"/%3E%3C/g%3E %3Ccircle r=\"4\" fill=\"%234aa3ff\"/%3E %3C/g%3E %3C/svg%3E",
+     "grid_options": {
+      "columns": "full"
+     },
+     "elements": [
+      {
+       "type": "state-label",
+       "entity": "sensor.quadro_elettrico_vmc_salda_smarty_temperatura_esterna_t4",
+       "style": {
+        "left": "4%",
+        "top": "25%",
+        "transform": "translate(0, -50%)",
+        "font-size": "30px",
+        "font-weight": 600,
+        "color": "var(--primary-text-color)",
+        "white-space": "nowrap"
+       }
+      },
+      {
+       "type": "state-label",
+       "entity": "sensor.quadro_elettrico_vmc_salda_smarty_temperatura_ripresa_t2",
+       "style": {
+        "left": "96%",
+        "top": "25%",
+        "transform": "translate(-100%, -50%)",
+        "font-size": "30px",
+        "font-weight": 600,
+        "color": "var(--primary-text-color)",
+        "white-space": "nowrap"
+       }
+      },
+      {
+       "type": "state-label",
+       "entity": "sensor.quadro_elettrico_vmc_salda_smarty_temperatura_mandata_t1",
+       "style": {
+        "left": "96%",
+        "top": "84%",
+        "transform": "translate(-100%, -50%)",
+        "font-size": "30px",
+        "font-weight": 600,
+        "color": "var(--primary-text-color)",
+        "white-space": "nowrap"
+       }
+      },
+      {
+       "type": "conditional",
+       "conditions": [
+        {
+         "entity": "sensor.quadro_elettrico_vmc_salda_smarty_temperatura_espulsione_t3",
+         "state_not": "0.0"
+        }
+       ],
+       "elements": [
+        {
+         "type": "state-label",
+         "entity": "sensor.quadro_elettrico_vmc_salda_smarty_temperatura_espulsione_t3",
+         "style": {
+          "left": "4%",
+          "top": "84%",
+          "transform": "translate(0, -50%)",
+          "font-size": "30px",
+          "font-weight": 600,
+          "color": "var(--primary-text-color)",
+          "white-space": "nowrap"
+         }
+        }
+       ]
+      },
+      {
+       "type": "state-label",
+       "entity": "sensor.quadro_elettrico_vmc_salda_smarty_modalita_attuale",
+       "style": {
+        "left": "50%",
+        "top": "27%",
+        "transform": "translate(-50%, -50%)",
+        "font-size": "16px",
+        "font-weight": 500,
+        "color": "var(--secondary-text-color)",
+        "white-space": "nowrap"
+       }
+      },
+      {
+       "type": "state-label",
+       "entity": "sensor.quadro_elettrico_vmc_salda_smarty_posizione_bypass",
+       "style": {
+        "left": "50%",
+        "top": "84%",
+        "transform": "translate(-50%, -50%)",
+        "font-size": "15px",
+        "font-weight": 500,
+        "color": "var(--secondary-text-color)",
+        "white-space": "nowrap"
+       },
+       "prefix": "Bypass "
+      },
+      {
+       "type": "state-label",
+       "entity": "sensor.quadro_elettrico_vmc_salda_smarty_ventilatore_ripresa_giri",
+       "style": {
+        "left": "33%",
+        "top": "84%",
+        "transform": "translate(-50%, -50%)",
+        "font-size": "14px",
+        "font-weight": 500,
+        "color": "var(--secondary-text-color)",
+        "white-space": "nowrap"
+       }
+      },
+      {
+       "type": "state-label",
+       "entity": "sensor.quadro_elettrico_vmc_salda_smarty_ventilatore_mandata_giri",
+       "style": {
+        "left": "67%",
+        "top": "84%",
+        "transform": "translate(-50%, -50%)",
+        "font-size": "14px",
+        "font-weight": 500,
+        "color": "var(--secondary-text-color)",
+        "white-space": "nowrap"
+       }
+      }
+     ]
+    },
+    {
+     "type": "custom:mini-graph-card",
+     "name": "Ultime 24 ore",
+     "icon": "mdi:chart-line",
+     "hours_to_show": 24,
+     "points_per_hour": 4,
+     "line_width": 2,
+     "height": 130,
+     "show": {
+      "fill": false,
+      "points": false,
+      "legend": true,
+      "labels": false
+     },
+     "grid_options": {
+      "columns": "full"
+     },
+     "entities": [
+      {
+       "entity": "sensor.quadro_elettrico_vmc_salda_smarty_temperatura_esterna_t4",
+       "name": "Esterno",
+       "color": "#3ccf91"
+      },
+      {
+       "entity": "sensor.quadro_elettrico_vmc_salda_smarty_temperatura_mandata_t1",
+       "name": "Mandata",
+       "color": "#4aa3ff"
+      },
+      {
+       "entity": "sensor.quadro_elettrico_vmc_salda_smarty_temperatura_ripresa_t2",
+       "name": "Ripresa",
+       "color": "#f5c542"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "grid",
+   "cards": [
+    {
+     "type": "heading",
+     "heading": "Filtri e allarmi",
+     "icon": "mdi:air-filter"
+    },
+    {
+     "type": "tile",
+     "entity": "sensor.quadro_elettrico_vmc_salda_smarty_filtri_giorni_residui",
+     "name": "Filtri",
+     "icon": "mdi:air-filter"
+    },
+    {
+     "type": "tile",
+     "entity": "button.quadro_elettrico_vmc_salda_smarty_reset_timer_filtri",
+     "name": "Reset filtri",
+     "icon": "mdi:restore",
+     "hide_state": true,
+     "tap_action": {
+      "action": "perform-action",
+      "perform_action": "button.press",
+      "target": {
+       "entity_id": "button.quadro_elettrico_vmc_salda_smarty_reset_timer_filtri"
+      },
+      "confirmation": {
+       "text": "Azzerare il timer dei filtri? Fallo solo dopo averli cambiati."
+      }
+     },
+     "color": "primary"
+    },
+    {
+     "type": "tile",
+     "entity": "sensor.quadro_elettrico_vmc_salda_smarty_allarmi_attivi",
+     "name": "Allarmi attivi",
+     "icon": "mdi:alert-outline",
+     "grid_options": {
+      "columns": "full"
+     }
+    },
+    {
+     "type": "tile",
+     "entity": "binary_sensor.quadro_elettrico_vmc_salda_smarty_allarme_critico",
+     "name": "Allarme critico",
+     "icon": "mdi:alert-octagon"
+    },
+    {
+     "type": "tile",
+     "entity": "binary_sensor.quadro_elettrico_vmc_salda_smarty_avviso_attivo",
+     "name": "Avviso",
+     "icon": "mdi:alert"
+    },
+    {
+     "type": "tile",
+     "entity": "button.quadro_elettrico_vmc_salda_smarty_reset_allarmi",
+     "name": "Reset allarmi",
+     "icon": "mdi:alarm-light-off-outline",
+     "hide_state": true,
+     "tap_action": {
+      "action": "perform-action",
+      "perform_action": "button.press",
+      "target": {
+       "entity_id": "button.quadro_elettrico_vmc_salda_smarty_reset_allarmi"
+      },
+      "confirmation": {
+       "text": "Resettare gli allarmi dell'unità?"
+      }
+     },
+     "color": "primary"
+    }
+   ]
+  },
+  {
+   "type": "grid",
+   "cards": [
+    {
+     "type": "heading",
+     "heading": "Impostazioni",
+     "icon": "mdi:cog"
+    },
+    {
+     "type": "tile",
+     "entity": "select.quadro_elettrico_vmc_salda_smarty_inverno_estate",
+     "name": "Stagione",
+     "icon": "mdi:sun-snowflake-variant",
+     "grid_options": {
+      "columns": "full"
+     },
+     "features": [
+      {
+       "type": "select-options"
+      }
+     ]
+    },
+    {
+     "type": "tile",
+     "entity": "binary_sensor.quadro_elettrico_vmc_salda_smarty_stagione_riscaldamento",
+     "name": "Riscaldamento",
+     "icon": "mdi:snowflake-thermometer"
+    },
+    {
+     "type": "tile",
+     "entity": "number.quadro_elettrico_vmc_salda_smarty_durata_boost",
+     "name": "Durata boost",
+     "icon": "mdi:timer-cog-outline"
+    },
+    {
+     "type": "tile",
+     "entity": "number.quadro_elettrico_vmc_salda_smarty_setpoint_protezione_edificio",
+     "name": "Setpoint protezione edificio",
+     "icon": "mdi:home-thermometer-outline",
+     "grid_options": {
+      "columns": "full"
+     },
+     "features": [
+      {
+       "type": "numeric-input",
+       "style": "buttons"
+      }
+     ],
+     "features_position": "inline"
+    },
+    {
+     "type": "tile",
+     "entity": "switch.quadro_elettrico_vmc_salda_smarty_raffrescamento_notturno",
+     "name": "Raffrescamento notturno",
+     "icon": "mdi:weather-night",
+     "grid_options": {
+      "columns": "full"
+     },
+     "features": [
+      {
+       "type": "toggle"
+      }
+     ],
+     "features_position": "inline"
+    },
+    {
+     "type": "tile",
+     "entity": "switch.quadro_elettrico_vmc_salda_smarty_protezione_secchezza",
+     "name": "Protezione secchezza",
+     "icon": "mdi:water-off",
+     "grid_options": {
+      "columns": "full"
+     },
+     "features": [
+      {
+       "type": "toggle"
+      }
+     ],
+     "features_position": "inline"
+    },
+    {
+     "type": "tile",
+     "entity": "number.quadro_elettrico_vmc_salda_smarty_soglia_protezione_secchezza",
+     "name": "Soglia secchezza",
+     "icon": "mdi:water-percent",
+     "grid_options": {
+      "columns": "full"
+     },
+     "features": [
+      {
+       "type": "numeric-input",
+       "style": "buttons"
+      }
+     ],
+     "features_position": "inline"
+    },
+    {
+     "type": "tile",
+     "entity": "switch.quadro_elettrico_vmc_salda_smarty_portata_in_base_a_ur_ripresa",
+     "name": "Portata in base all'umidità",
+     "icon": "mdi:water-percent",
+     "grid_options": {
+      "columns": "full"
+     },
+     "features": [
+      {
+       "type": "toggle"
+      }
+     ],
+     "features_position": "inline"
+    },
+    {
+     "type": "tile",
+     "entity": "number.quadro_elettrico_vmc_salda_smarty_setpoint_ur_inverno",
+     "name": "UR inverno",
+     "icon": "mdi:water-percent"
+    },
+    {
+     "type": "tile",
+     "entity": "number.quadro_elettrico_vmc_salda_smarty_setpoint_ur_estate",
+     "name": "UR estate",
+     "icon": "mdi:water-percent"
+    }
+   ]
+  },
+  {
+   "type": "grid",
+   "cards": [
+    {
+     "type": "heading",
+     "heading": "Dispositivo",
+     "icon": "mdi:chip"
+    },
+    {
+     "type": "tile",
+     "entity": "binary_sensor.quadro_elettrico_vmc_salda_smarty_connessione_esp",
+     "name": "ESP",
+     "icon": "mdi:lan-connect"
+    },
+    {
+     "type": "tile",
+     "entity": "binary_sensor.quadro_elettrico_vmc_salda_smarty_pannello_s_touch_attivo",
+     "name": "Pannello S-Touch",
+     "icon": "mdi:tablet-dashboard"
+    },
+    {
+     "type": "tile",
+     "entity": "sensor.quadro_elettrico_vmc_salda_smarty_segnale_wifi",
+     "name": "Wi-Fi",
+     "icon": "mdi:wifi"
+    },
+    {
+     "type": "tile",
+     "entity": "sensor.quadro_elettrico_vmc_salda_smarty_ritrasmissioni_esp",
+     "name": "Ritrasmissioni",
+     "icon": "mdi:repeat"
+    },
+    {
+     "type": "tile",
+     "entity": "sensor.quadro_elettrico_vmc_salda_smarty_richieste_esp_fallite",
+     "name": "Richieste fallite",
+     "icon": "mdi:close-circle-outline"
+    },
+    {
+     "type": "tile",
+     "entity": "sensor.quadro_elettrico_vmc_salda_smarty_versione_software",
+     "name": "Firmware unità",
+     "icon": "mdi:information-outline"
+    },
+    {
+     "type": "tile",
+     "entity": "button.quadro_elettrico_vmc_salda_smarty_sincronizza_orologio",
+     "name": "Sincronizza orologio",
+     "icon": "mdi:clock-check-outline",
+     "hide_state": true,
+     "tap_action": {
+      "action": "perform-action",
+      "perform_action": "button.press",
+      "target": {
+       "entity_id": "button.quadro_elettrico_vmc_salda_smarty_sincronizza_orologio"
+      }
+     },
+     "color": "primary"
+    },
+    {
+     "type": "tile",
+     "entity": "button.quadro_elettrico_vmc_salda_smarty_riavvia_esp",
+     "name": "Riavvia ESP",
+     "icon": "mdi:restart",
+     "hide_state": true,
+     "tap_action": {
+      "action": "perform-action",
+      "perform_action": "button.press",
+      "target": {
+       "entity_id": "button.quadro_elettrico_vmc_salda_smarty_riavvia_esp"
+      },
+      "confirmation": {
+       "text": "Riavviare l'ESP della VMC?"
+      }
+     },
+     "color": "primary"
+    }
+   ]
+  }
+ ]
+}
