@@ -312,6 +312,37 @@ sensor:
     filters:
       - multiply: 0.1
 
+  # Uscite analogiche 0-10 V dei riscaldamenti. Sulla miniMCB della Smarty AO3
+  # comanda il pre-riscaldatore antigelo (manuale, morsetto X2); con un
+  # riscaldatore attivo la temperatura di mandata non misura il solo recupero.
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Uscita riscaldamento AO3
+    icon: mdi:radiator
+    entity_category: diagnostic
+    register_type: read
+    address: 89
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    state_class: measurement
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Uscita riscaldamento AO4
+    icon: mdi:radiator
+    entity_category: diagnostic
+    register_type: read
+    address: 91
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    state_class: measurement
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+
   - platform: modbus_controller
     modbus_controller_id: smarty
     name: Temperatura scambiatore
@@ -374,6 +405,32 @@ binary_sensor:
     register_type: discrete_input
     address: 209
     skip_updates: 5
+
+  # Linee di alimentazione dei riscaldamenti on/off (DO1 riscaldatore, DO2 pre-riscaldatore).
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Linea riscaldatore DO1
+    icon: mdi:radiator
+    entity_category: diagnostic
+    register_type: discrete_input
+    address: 300
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Linea pre-riscaldatore DO2
+    icon: mdi:radiator
+    entity_category: diagnostic
+    register_type: discrete_input
+    address: 303
+
+  # Configurazione: la sonda T4 sta prima del pre-riscaldatore (misura l'aria esterna vera)?
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Sonda esterna prima del pre-riscaldatore
+    icon: mdi:thermometer-lines
+    entity_category: diagnostic
+    register_type: coil
+    address: 118
 
   - platform: status
     name: Connessione ESP
