@@ -3,9 +3,9 @@
 // a pezzi come da una UART letta nel loop, e verifica misure e valori decodificati.
 #include <cstdio>
 #include <cstdlib>
-#include "salda_sniffer/sniffer_core.h"
+#include "salda_common/sniffer_core.h"
 
-using namespace esphome::salda_sniffer;
+using namespace esphome::salda_common;
 using esphome::salda_common::frame::append_crc;
 
 static int failures = 0;
@@ -128,10 +128,10 @@ int main() {
     CHECK(w.gap.min_us >= 40000 - 2 * (loop_us + 2000) && w.gap.min_us <= 40000 + 2 * (loop_us + 2000));
     CHECK(w.latency.avg_us() <= 8000 + 2 * (loop_us + 2000));
     // Valori decodificati
-    CHECK(s.registers[SnifferCore::reg_key(4, 18)] == reg_value(4, 18));
-    CHECK(s.registers[SnifferCore::reg_key(3, 37)] == reg_value(3, 37));
-    CHECK(s.registers[SnifferCore::reg_key(3, 2)] == reg_value(3, 2));  // riletto dopo la scrittura
-    CHECK(s.registers[SnifferCore::reg_key(1, 1)] == 1 && s.registers[SnifferCore::reg_key(1, 2)] == 0);
+    CHECK(s.registers[SnifferCore::reg_key(4, 18)].value == reg_value(4, 18));
+    CHECK(s.registers[SnifferCore::reg_key(3, 37)].value == reg_value(3, 37));
+    CHECK(s.registers[SnifferCore::reg_key(3, 2)].value == reg_value(3, 2));  // riletto dopo la scrittura
+    CHECK(s.registers[SnifferCore::reg_key(1, 1)].value == 1 && s.registers[SnifferCore::reg_key(1, 2)].value == 0);
     // Scrittura vista
     CHECK(s.writes.size() == 1 && s.writes[0].fc == 6 && s.writes[0].start == 2 && s.writes[0].values[0] == 215 &&
           s.writes[0].confirmed);

@@ -24,7 +24,7 @@ I documenti Salda non sono inclusi nel repository: si scaricano dalla pagina [sa
 |---|---|---|---|
 | 1 | Modalità di sistema | 0 Standby, 1 Protezione edificio (vel. 1), 2 Economy (vel. 2), 3 Comfort (vel. 3) | select Modalità |
 | 2 | Setpoint Comfort | 160..300 ×0,1 °C (def. 210) | number |
-| 3 | Portata aria in % | 0..100 (def. 0) | number (disab.) |
+| 3 | Portata aria in % | 0..100; il pannello la scrive insieme alla modalità | number |
 | 4 | Setpoint Economy | 0 = risparmio, 160..300 ×0,1 °C (def. 180) | number |
 | 6 | Setpoint Protezione edificio | 0 = risparmio, 160..300 ×0,1 °C (def. 165) | number |
 | 14 | Durata boost | 0..18000 s (def. 600) | number (min) |
@@ -32,7 +32,7 @@ I documenti Salda non sono inclusi nel repository: si scaricano dalla pagina [sa
 | 21 / 22 | Setpoint UR estate / inverno | % (def. 70 / 50) | number |
 | 24 | Soglia protezione secchezza | % (def. 30) | number |
 | 100..106 | Data/ora (anno 0..99, mese, giorno, riservato, ore, minuti, secondi) | poi coil 2 = 1 | pulsante Sincronizza orologio |
-| 107 | Tempo residuo boost | s | scritto a 0 per fermare il boost |
+| 107 | Tempo residuo boost | s | letto dal pannello |
 | 202 | Reset allarmi | 1 = esegui | pulsante |
 
 **Disponibili ma non esposti:**

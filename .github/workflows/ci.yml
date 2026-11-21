@@ -6,14 +6,14 @@ on:
 
 jobs:
   tests:
-    name: Test su PC (parser, proxy, sniffer)
+    name: Test su PC (parser, proxy, sniffer, bus condiviso)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Compila ed esegue i test
         run: |
-          for t in frame proxy sniffer; do
-            g++ -std=c++17 -Wall -Wextra -Icomponents "tests/test_$t.cpp" -o "/tmp/test_$t"
+          for t in frame proxy sniffer bus; do
+            g++ -std=c++17 -O2 -Wall -Wextra -Icomponents "tests/test_$t.cpp" -o "/tmp/test_$t"
             "/tmp/test_$t"
           done
 

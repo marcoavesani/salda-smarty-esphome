@@ -77,13 +77,12 @@ number:
     device_class: temperature
     mode: box
 
-  # Registro 3 "Air flow control by percents" (default 0). Comportamento non
-  # documentato nel dettaglio: disabilitato di default, provalo con cautela.
+  # Registro 3 "Air flow control by percents": il pannello lo scrive insieme alla
+  # modalità (misurato: 20 % con Protezione edificio, 70 % con Comfort).
   - platform: modbus_controller
     modbus_controller_id: smarty
-    name: Portata aria manuale
+    name: Portata aria
     icon: mdi:fan-chevron-up
-    disabled_by_default: true
     address: 3
     value_type: U_WORD
     min_value: 0
@@ -150,9 +149,8 @@ number:
     mode: box
 
 switch:
-  # Coil 5 "Intensive air flow": 1 avvia il boost per la durata impostata.
-  # Scrivere 0 sul coil "non fa nulla" secondo la tabella, quindi per fermare
-  # il boost azzeriamo anche HR 107 (tempo residuo boost).
+  # Coil 5 "Intensive air flow": 1 avvia il boost per la durata impostata, 0 lo
+  # ferma (è quello che fa l'S-Touch, misurato sul bus).
   - platform: modbus_controller
     modbus_controller_id: smarty
     id: boost
@@ -160,12 +158,6 @@ switch:
     icon: mdi:fan-plus
     register_type: coil
     address: 5
-    write_lambda: |-
-      if (!x) {
-        id(smarty)->queue_command(
-            modbus_controller::ModbusCommandItem::create_write_single_command(id(smarty), 107, 0));
-      }
-      return true;
 
   - platform: modbus_controller
     modbus_controller_id: smarty

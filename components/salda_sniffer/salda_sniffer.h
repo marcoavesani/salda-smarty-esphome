@@ -6,10 +6,15 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 
-#include "sniffer_core.h"
+#include "../salda_common/sniffer_core.h"
 
 namespace esphome {
 namespace salda_sniffer {
+
+using salda_common::SnifferCore;
+using salda_common::WindowStats;
+using salda_common::GAP_BUCKETS;
+using salda_common::GAP_BUCKETS_MS;
 
 class SaldaSniffer : public PollingComponent, public uart::UARTDevice {
  public:

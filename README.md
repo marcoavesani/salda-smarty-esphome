@@ -16,13 +16,13 @@ Controllo completo di una **Salda Smarty 2X** (scheda **miniMCB**, valido anche 
 
 **Hardware in uso:** M5Stack **AtomS3 Lite** (ESP32-S3) + **Atomic RS485 Base**, cioè una sola interfaccia RS485. Le varianti per XIAO ESP32-C6 e quelle con due porte (proxy) restano come alternative.
 
-**Percorso:**
+**Configurazione consigliata:** `salda-smarty-bus.yaml`, il **bus condiviso**.
 
-1. **Misura** il traffico tra S-Touch e unità con `salda-smarty-sniffer.yaml` (solo ascolto, collegato in parallelo al pannello).
-2. In base ai numeri, scegli una strada:
-   - un master che trasmette solo nelle pause del pannello, sulla stessa linea e con una sola interfaccia (da scrivere);
-   - l'ESP al posto del pannello (`salda-smarty.yaml`);
-   - il proxy con due porte.
+- L'ESP sta in parallelo all'S-Touch, che resta al suo posto e continua a funzionare, con una sola interfaccia RS485.
+- I dati che il pannello legge già arrivano ascoltando il bus.
+- Il resto, e i comandi, viaggiano nelle pause del pannello. Le pause sono state misurate sul campo con `salda-smarty-sniffer.yaml`.
+
+Le alternative sono l'ESP al posto del pannello (`salda-smarty.yaml`) e il proxy a due porte.
 
 Non esisteva nulla di simile: l'integrazione ufficiale HA [`smarty`](https://www.home-assistant.io/integrations/smarty/) funziona solo via Modbus TCP con il gateway Salda MB-GATEWAY. Espone poche entità e ha un bug noto: le temperature sotto zero vengono lette come ~6551 °C ([home-assistant/core#160413](https://github.com/home-assistant/core/issues/160413)).
 
@@ -105,29 +105,125 @@ packages:
       - packages/alarms.yaml
 ```
 
+### Bus condiviso (consigliato)
+
+Stessa intestazione dell'esempio "Misura del bus", con `name: salda-smarty`. Al posto di `external_components` e del pacchetto sniffer:
+
+```yaml
+time:
+  - platform: homeassistant
+    id: ha_time
+
+external_components:
+  - source: github://marcoavesani/salda-smarty-esphome@v0.4.0
+    components: [salda_bus, salda_common]
+
+uart:
+  id: uart_bus
+  rx_pin: GPIO5            # AtomS3 + Atomic RS485 Base
+  tx_pin: GPIO6
+  baud_rate: 19200
+  parity: EVEN
+  rx_buffer_size: 1024
+
+salda_bus:
+  id: bus
+  bus_uart_id: uart_bus
+  panel_connected:
+    name: Pannello S-Touch attivo
+
+modbus:
+  id: modbus_bus
+  uart_id: bus             # la UART virtuale di salda_bus
+  send_wait_time: 5000ms
+
+modbus_controller:
+  - id: smarty
+    modbus_id: modbus_bus
+    address: 1
+    update_interval: 15s
+
+packages:
+  smarty:
+    url: https://github.com/marcoavesani/salda-smarty-esphome
+    ref: v0.4.0
+    files:
+      - packages/monitor.yaml
+      - packages/controls.yaml
+      - packages/alarms.yaml
+```
+
+Le altre opzioni di `salda_bus` (entità diagnostiche, tempi) sono in `salda-smarty-bus.yaml`.
+
 ### Proxy
 
 Per il proxy usa `components: [salda_proxy, salda_common]` e copia i blocchi `uart`, `salda_proxy` e `modbus` da `salda-smarty-proxy.yaml`.
 
 I file `salda-smarty*.yaml` nella radice del repository sono esempi completi che usano i componenti locali (`path: components`).
 
-## ⚠️ Prima di collegare: S-Touch ed ESP non possono stare in parallelo
+## Due master sulla stessa linea: come funziona il bus condiviso
 
-- La miniMCB della Smarty ha **una sola linea RS485** (connettore **X18**), in Modbus RTU. Il manuale miniMCB v2024.1, §5.39, dice: *"one RS485 communication line for Remote controller or BMS interface"*.
-- L'S-Touch è **master** su quella linea: parametro di servizio F.17 = 0, default.
-- Anche l'ESP deve essere master per interrogare l'unità.
-- **Due master sulla stessa coppia A/B collidono.** Modbus RTU ammette un solo master per segmento.
+- **Una sola porta.** La miniMCB della Smarty ha **una sola linea RS485** utilizzabile, il connettore **X18**, in Modbus RTU.
+- **Il pannello interroga di continuo.** L'S-Touch è **master** su quella linea (parametro di servizio F.17 = 0, default) e interroga l'unità senza sosta.
+- **Due master ingenui collidono.** Un secondo master che trasmette quando gli pare, come il `modbus` standard di ESPHome collegato in parallelo, si scontra con il pannello e può prendere per sue le risposte destinate all'altro.
 
-Le alternative:
+### Cosa è stato misurato
+
+Con `salda-smarty-sniffer.yaml`, su una Smarty 2X con S-Touch:
+
+| Grandezza | Valore |
+|---|---|
+| Ciclo di interrogazione | **23 richieste** in circa 2,2 s, circa 600 transazioni al minuto |
+| Occupazione del bus | **8,6 %** |
+| Pausa dopo ogni risposta | **50–100 ms** quasi sempre; minima **34 ms** |
+| Latenza dell'unità | media **8 ms**, massima **15 ms** |
+
+Le pause lunghe (decine di secondi) arrivano quando si naviga nei menu.
+
+Cosa legge il pannello:
+
+| Tipo | Indirizzi |
+|---|---|
+| Holding register | HR 1, 2, 3, 4, 6, 14, 21, 22, 23, 107, 202, 661, 662 |
+| Coil | 1, 5, 8, 51, 53, 117, 125 |
+| Input register | IR 18 (mandata), IR 30 (giorni filtri) |
+| Discrete input | **tutti, da 1 a 339 in un solo blocco** |
+
+Le scritture del pannello confermano la mappa dei registri:
+- Il setpoint Comfort è `HR 2 = 215` per 21,5 °C.
+- La modalità è `HR 1`, e il pannello scrive insieme la portata `HR 3` (20 % in Protezione edificio, 70 % in Comfort).
+- Il boost si accende con `COIL 5 = 1` e si spegne con `COIL 5 = 0`.
+
+### Cosa fa `salda_bus`
+
+- **Ascolta tutto il traffico.** Ogni valore che passa finisce in una cache con il suo istante di aggiornamento.
+- **Risponde a `modbus_controller` dalla cache** quando tutti i registri richiesti hanno meno di `cache_max_age` (10 s). In questo caso non trasmette niente.
+- **Legge il resto in blocchi di al massimo 4 registri.** Ogni blocco parte **subito dopo che l'unità ha risposto al pannello**, che a quel punto aspetta almeno 34 ms prima della richiesta successiva. Una nostra transazione è stimata al massimo 30 ms, contando la latenza peggiore. Le scritture seguono la stessa regola.
+- **Accetta una risposta solo se corrisponde alla sua richiesta.** Indirizzo, function code e quantità devono tornare. Se la risposta manca, ritrasmette nello slot successivo.
+- **Con il pannello fermo** da più di 600 ms (menu, pannello staccato) il bus è libero e trasmette subito.
+- **Eco del transceiver:** se il transceiver rimanda indietro ciò che l'ESP trasmette, la riconosce da sola e la scarta.
+
+### Verifica in simulazione (`tests/test_bus.cpp`)
+
+La simulazione modella il bus a livello di byte, con collisioni vere, sul traffico misurato. Il pannello, `modbus_controller` con le letture e scritture dei pacchetti e l'unità girano per 2 minuti per ogni scenario.
+
+| Scenario | Risultato |
+|---|---|
+| Traffico come misurato | **0 collisioni**, nessun timeout, nessun dato sbagliato; 252 richieste HA su 302 servite dalla cache |
+| Con eco del transceiver | Come sopra |
+| Loop dell'ESP lento | Come sopra |
+| Pannello assente | Come sopra |
+| Pause del pannello strette (20–40 ms, peggiori del reale) | Qualche collisione, risolta con ritrasmissioni; **nessun dato sbagliato** né al pannello né a HA |
+
+### Alternative
 
 | Opzione | File | Cosa serve | Pro / contro |
 |---|---|---|---|
-| **A. ESP al posto dell'S-Touch** | `salda-smarty.yaml` | Stacchi l'S-Touch e colleghi l'Atom al cavo/porta X18 | Il più semplice. Controllo completo da HA, ma perdi il pannello a muro (lo puoi ricollegare quando vuoi) |
-| **B. Proxy** | `salda-smarty-proxy.yaml` (Atom), `salda-smarty-proxy-xiao-c6.yaml` (XIAO ESP32-C6) | L'Atom con **due** porte RS485 inserito nel cavo: slave verso l'S-Touch, master verso l'unità | Tieni **pannello e Home Assistant insieme**. Serve un secondo modulo RS485. Se l'ESP è spento il pannello resta senza comunicazione ("noC") |
+| **Bus condiviso** (consigliata) | `salda-smarty-bus.yaml` | Una sola interfaccia in parallelo all'S-Touch | Pannello e HA insieme, nessun cablaggio da tagliare. In teoria, con pause molto più strette di quelle misurate, sono possibili rare collisioni, che vengono ritrasmesse |
+| **ESP al posto dell'S-Touch** | `salda-smarty.yaml` | Stacchi l'S-Touch e colleghi l'Atom alla X18 | Il più semplice, ma perdi il pannello a muro |
+| **Proxy** | `salda-smarty-proxy.yaml`, `salda-smarty-proxy-xiao-c6.yaml` | Due porte RS485 inserite nel cavo | Zero collisioni, ma serve una seconda interfaccia. Se l'ESP è spento, il pannello resta senza comunicazione ("noC") |
 
-Le due varianti espongono le stesse entità in Home Assistant.
-
-Sconsigliato: mettere l'ESP in parallelo "tanto il pannello interroga di rado". Le collisioni producono errori CRC e scritture perse, sia sull'S-Touch sia sull'unità.
+Tutte le varianti espongono le stesse entità in Home Assistant.
 
 ## Cablaggio (opzione A)
 
@@ -322,6 +418,7 @@ Il parser dei frame e la logica del proxy si testano senza hardware:
 g++ -std=c++17 -Icomponents tests/test_frame.cpp -o test_frame && ./test_frame
 g++ -std=c++17 -Icomponents tests/test_proxy.cpp -o test_proxy && ./test_proxy
 g++ -std=c++17 -Icomponents tests/test_sniffer.cpp -o test_sniffer && ./test_sniffer
+g++ -std=c++17 -O2 -Icomponents tests/test_bus.cpp -o test_bus && ./test_bus
 ```
 
 `test_proxy` simula 2 minuti di un S-Touch che interroga con ritrasmissioni, di un'unità lenta o che a volte non risponde e di richieste continue da HA. La verifica principale: nessuno riceve mai una risposta destinata a un altro.
@@ -340,7 +437,7 @@ In Home Assistant il dispositivo compare da solo, in **Impostazioni → Disposit
 
 | Tipo | Entità |
 |---|---|
-| Comandi | **Modalità** (Standby / Protezione edificio / Economy / Comfort, cioè velocità 0–3), **Boost**, **Setpoint Comfort / Economy / Protezione edificio**, Durata boost, Inverno/Estate, Raffrescamento notturno, Protezione secchezza, Portata in base a UR, setpoint UR, Portata aria manuale (disabilitata di default) |
+| Comandi | **Modalità** (Standby / Protezione edificio / Economy / Comfort, cioè velocità 0–3), **Boost**, **Setpoint Comfort / Economy / Protezione edificio**, Durata boost, Inverno/Estate, Raffrescamento notturno, Protezione secchezza, Portata in base a UR, setpoint UR, **Portata aria** (%) |
 | Pulsanti | Reset timer filtri, Reset allarmi, Sincronizza orologio (imposta data/ora dell'unità da HA), Riavvia ESP |
 | Sensori | Stato sistema (testo), Modalità attuale, temperature T1–T4 e mandata richiesta, portata %, giri e m³/h dei due ventilatori, posizione bypass, efficienza recupero, giorni residui filtri, tempo residuo boost, stagione riscaldamento, raffrescamento notturno attivo |
 | Opzionali (disabilitati) | Umidità/CO₂ mandata e ripresa (solo se i sensori sono installati), temperatura scambiatore |
@@ -355,6 +452,6 @@ Una card di esempio è in [homeassistant/dashboard-card.yaml](homeassistant/dash
 
 ## Note e limiti noti
 
-- **Boost:** il coil 5 a 1 avvia il boost per la "Durata boost". Secondo la tabella, scrivere 0 sul coil "non fa nulla". Per questo lo switch, quando lo spegni, azzera anche HR 107 (tempo residuo): da verificare sull'unità.
+- **Boost:** il coil 5 a 1 avvia il boost per la "Durata boost", a 0 lo ferma. È quello che fa l'S-Touch, misurato sul bus, anche se la tabella Salda dice che 0 "non fa nulla".
 - **IR 15 = 4:** viene mostrato come "Boost". Il significato del valore 4 non è documentato.
 - **Firmware:** la mappa è stabile tra le tabelle MCB 1.21 (2018) e 1.30 (2026) per tutti i registri usati qui.

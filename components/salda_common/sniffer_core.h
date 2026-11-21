@@ -1,23 +1,23 @@
 #pragma once
-// Ascolto passivo di un bus Modbus RTU (S-Touch <-> unità). Non trasmette mai.
-// Riconosce richieste e risposte, le accoppia e raccoglie le misure che servono
-// a capire se un secondo master può inserirsi nelle pause:
+// Ascolto di un bus Modbus RTU (S-Touch <-> unità). Riconosce richieste e
+// risposte, le accoppia e raccoglie:
 //   - frequenza e contenuto delle interrogazioni del pannello
 //   - pausa tra la fine di una risposta e la richiesta successiva
 //   - latenza di risposta dell'unità e occupazione del bus
-//   - valori letti/scritti (cache dei registri)
-// Senza dipendenze da ESPHome: testato su PC (tests/test_sniffer.cpp).
+//   - valori letti/scritti (cache dei registri, con l'istante dell'ultimo aggiornamento)
+// Usato da salda_sniffer (solo ascolto) e da salda_bus (bus condiviso), che
+// segnala le proprie richieste con inject_request() per distinguerle da quelle
+// del pannello. Senza dipendenze da ESPHome: testato su PC.
 
+#include <algorithm>
 #include <cstdint>
 #include <map>
 #include <vector>
 
-#include "../salda_common/frame.h"
+#include "frame.h"
 
 namespace esphome {
-namespace salda_sniffer {
-
-namespace frame = salda_common::frame;
+namespace salda_common {
 
 /// Minimo/massimo/media di una durata in microsecondi.
 struct Span {
@@ -44,12 +44,13 @@ static const size_t GAP_BUCKETS = sizeof(GAP_BUCKETS_MS) / sizeof(GAP_BUCKETS_MS
 struct WindowStats {
   uint32_t start_us{0};
   bool started{false};
-  uint32_t transactions{0};
+  uint32_t transactions{0};      // transazioni del pannello
+  uint32_t own_transactions{0};  // transazioni nostre (salda_bus)
   uint32_t no_response{0};
-  uint32_t errors{0};          // byte scartati + risposte orfane + frame sconosciuti
-  uint64_t busy_us{0};         // somma delle durate richiesta->fine risposta
-  Span gap;                    // fine risposta -> richiesta successiva
-  Span latency;                // fine richiesta -> inizio risposta
+  uint32_t errors{0};            // byte scartati + risposte orfane + frame sconosciuti
+  uint64_t busy_us{0};           // somma delle durate richiesta->fine risposta
+  Span gap;                      // fine risposta -> richiesta successiva (solo pannello)
+  Span latency;                  // fine richiesta -> inizio risposta
   uint32_t gap_hist[GAP_BUCKETS]{};
   void reset(uint32_t now) {
     *this = WindowStats();
@@ -83,6 +84,11 @@ struct WriteEvent {
   bool confirmed;                // l'unità ha risposto senza eccezione
 };
 
+struct RegValue {
+  uint16_t value;
+  uint32_t time_us;  // istante dell'ultimo aggiornamento
+};
+
 class SnifferCore {
  public:
   // --- configurazione -------------------------------------------------------
@@ -93,21 +99,56 @@ class SnifferCore {
   size_t max_write_events{32};
 
   // --- risultati -------------------------------------------------------------
-  uint32_t total_transactions{0};
-  uint32_t total_no_response{0};
+  uint32_t total_transactions{0};       // del pannello
+  uint32_t total_own_transactions{0};   // nostre
+  uint32_t total_no_response{0};        // del pannello
   uint32_t total_orphan_responses{0};
   uint32_t total_exceptions{0};
   uint32_t total_unknown_frames{0};
   uint32_t total_dropped_bytes{0};
+  uint32_t total_echoes{0};             // eco delle nostre trasmissioni scartate
   uint32_t last_frame_us{0};
   bool seen_traffic{false};
+  uint32_t last_panel_us{0};            // ultimo frame del pannello (sua richiesta o risposta a lui)
+  bool seen_panel{false};
+  bool echo_detected{false};            // il transceiver rimanda indietro ciò che trasmettiamo
   WindowStats window;
   std::vector<PollStat> polls;
   /// chiave: (tipo << 16) | indirizzo; tipo 1 coil, 2 discrete input, 3 holding, 4 input
-  std::map<uint32_t, uint16_t> registers;
-  std::vector<WriteEvent> writes;  // svuotato dall'adattatore dopo averlo loggato
+  std::map<uint32_t, RegValue> registers;
+  std::vector<WriteEvent> writes;  // scritture del pannello, svuotato dall'adattatore dopo il log
+
+  // --- eventi per salda_bus ----------------------------------------------------
+  uint32_t transaction_seq{0};      // +1 a ogni transazione completata (pannello o nostra)
+  bool last_transaction_ours{false};
+  uint32_t last_transaction_end_us{0};
+  std::vector<uint8_t> last_response;
+  uint32_t ours_failed_seq{0};      // +1 quando una nostra richiesta resta senza risposta
 
   static uint32_t reg_key(uint8_t type, uint16_t addr) { return ((uint32_t) type << 16) | addr; }
+  static uint8_t type_of_fc(uint8_t fc) {
+    switch (fc) {
+      case 0x01: case 0x05: case 0x0F: return 1;
+      case 0x02: return 2;
+      case 0x03: case 0x06: case 0x10: return 3;
+      case 0x04: return 4;
+      default: return 0;
+    }
+  }
+
+  /// Valore in cache aggiornato da non più di max_age_us?
+  bool fresh(uint8_t type, uint16_t addr, uint32_t now, uint32_t max_age_us, uint16_t *value = nullptr) const {
+    auto it = registers.find(reg_key(type, addr));
+    if (it == registers.end() || now - it->second.time_us > max_age_us)
+      return false;
+    if (value != nullptr)
+      *value = it->second.value;
+    return true;
+  }
+
+  bool request_pending() const { return pending_; }
+  bool buffer_empty() const { return buf_.empty(); }
+  uint32_t last_rx_us() const { return last_rx_; }
 
   // --- ingressi --------------------------------------------------------------
   void on_bytes(const uint8_t *data, size_t len, uint32_t now) {
@@ -118,16 +159,29 @@ class SnifferCore {
     last_rx_ = now;
     if (!window.started)
       window.reset(now);
-    if (buf_.size() > 4 * frame::MAX_FRAME) {
+    if (buf_.size() > 4 * frame::MAX_FRAME)
       this->drop_(buf_.size());
-    }
+  }
+
+  /// salda_bus ha appena trasmesso `req` (tra start ed end): attendine la risposta.
+  void inject_request(const std::vector<uint8_t> &req, uint32_t start, uint32_t end) {
+    if (pending_)
+      this->count_no_response_();
+    pending_req_ = req;
+    pending_start_ = start;
+    pending_end_ = end;
+    pending_ = true;
+    pending_ours_ = true;
+    echo_checked_ = false;
+    have_last_end_ = false;
+    last_rx_ = end;  // il bus è stato occupato da noi fino a qui
   }
 
   void step(uint32_t now) {
     if (!window.started)
       window.reset(now);
     this->extract_(now);
-    if (pending_ && now - pending_end_ > response_timeout_us) {
+    if (pending_ && (int32_t) (now - pending_end_) > (int32_t) response_timeout_us) {
       this->count_no_response_();
       pending_ = false;
     }
@@ -136,7 +190,6 @@ class SnifferCore {
  protected:
   enum class Kind { NEED_MORE, INVALID, FRAME };
 
-  /// Prova a leggere all'inizio del buffer un frame del tipo indicato.
   Kind try_kind_(bool request, size_t &len) const {
     int n = request ? frame::request_length(buf_.data(), buf_.size())
                     : frame::response_length(buf_.data(), buf_.size());
@@ -152,9 +205,48 @@ class SnifferCore {
     return Kind::FRAME;
   }
 
+  /// Eco della nostra richiesta all'inizio del buffer? `waiting` = servono altri byte per deciderlo.
+  bool handle_echo_(bool silent, bool &waiting) {
+    waiting = false;
+    if (!pending_ || !pending_ours_ || echo_checked_)
+      return false;
+    const size_t n = pending_req_.size();
+    const size_t m = std::min(n, buf_.size());
+    if (!std::equal(buf_.begin(), buf_.begin() + m, pending_req_.begin())) {
+      echo_checked_ = true;  // il primo frame non è un'eco
+      return false;
+    }
+    if (buf_.size() < n) {
+      waiting = !silent;
+      if (silent)
+        echo_checked_ = true;
+      return false;
+    }
+    // Copia esatta della nostra richiesta. Per le letture è per forza un'eco (la
+    // risposta ha un formato diverso); per le scritture la risposta è identica alla
+    // richiesta, quindi la si considera eco solo se un'eco è già stata vista.
+    const uint8_t fc = pending_req_[1];
+    const bool is_read = fc >= 0x01 && fc <= 0x04;
+    echo_checked_ = true;
+    if (is_read || echo_detected) {
+      echo_detected = true;
+      total_echoes++;
+      buf_.erase(buf_.begin(), buf_.begin() + n);
+      times_.erase(times_.begin(), times_.begin() + n);
+      return true;
+    }
+    return false;
+  }
+
   void extract_(uint32_t now) {
     while (!buf_.empty()) {
       const bool silent = now - last_rx_ >= gap_us;
+      bool waiting = false;
+      if (this->handle_echo_(silent, waiting))
+        continue;
+      if (waiting)
+        return;
+
       size_t len = 0;
       Kind resp = Kind::INVALID, req = Kind::INVALID;
 
@@ -200,15 +292,13 @@ class SnifferCore {
         continue;
       }
       if (!silent && req == Kind::INVALID && resp == Kind::INVALID && !this->valid_frame_ahead_()) {
-        // inizio sporco ma potrebbe completarsi: aspetta il silenzio
         if (buf_.size() < frame::MAX_FRAME)
-          return;
+          return;  // inizio sporco ma potrebbe completarsi: aspetta il silenzio
       }
       this->drop_(1);
     }
   }
 
-  /// C'è un frame valido (richiesta o risposta) che inizia più avanti nel buffer?
   bool valid_frame_ahead_() const {
     for (size_t k = 1; k + 4 <= buf_.size(); k++) {
       const uint8_t *p = buf_.data() + k;
@@ -247,39 +337,63 @@ class SnifferCore {
     pending_start_ = start;
     pending_end_ = end;
     pending_ = true;
+    pending_ours_ = false;
+    last_panel_us = end;
+    seen_panel = true;
     this->consume_(len);
-    // il gap si misura solo dopo una transazione completa
-    have_last_end_ = false;
+    have_last_end_ = false;  // il gap si misura solo dopo una transazione completa del pannello
   }
 
   void on_response_(size_t len) {
     uint32_t start = times_[0], end = times_[len - 1];
     std::vector<uint8_t> resp = this->peek_(len);
     this->consume_(len);
+    const bool ours = pending_ours_;
     pending_ = false;
-    total_transactions++;
-    window.transactions++;
+    pending_ours_ = false;
     window.latency.add(start - pending_end_);
     window.busy_us += end - pending_start_;
-    last_end_ = end;
-    have_last_end_ = true;
+    transaction_seq++;
+    last_transaction_ours = ours;
+    last_transaction_end_us = end;
+    last_response = resp;
 
-    PollStat &ps = this->poll_for_(pending_req_, pending_start_);
+    if (ours) {
+      total_own_transactions++;
+      window.own_transactions++;
+      have_last_end_ = false;
+    } else {
+      total_transactions++;
+      window.transactions++;
+      last_end_ = end;
+      have_last_end_ = true;
+      last_panel_us = end;
+    }
+
     if (resp[1] & 0x80) {
-      ps.exceptions++;
-      total_exceptions++;
-      this->record_write_(pending_req_, pending_start_, false);
+      if (!ours) {
+        this->poll_for_(pending_req_, pending_start_).exceptions++;
+        total_exceptions++;
+        this->record_write_(pending_req_, pending_start_, false);
+      }
       return;
     }
-    this->record_values_(pending_req_, resp);
-    this->record_write_(pending_req_, pending_start_, true);
+    if (!ours)
+      this->poll_for_(pending_req_, pending_start_);
+    this->record_values_(pending_req_, resp, end);
+    if (!ours)
+      this->record_write_(pending_req_, pending_start_, true);
   }
 
   void count_no_response_() {
-    total_no_response++;
-    window.no_response++;
-    PollStat &ps = this->poll_for_(pending_req_, pending_start_);
-    ps.no_response++;
+    if (pending_ours_) {
+      ours_failed_seq++;
+      pending_ours_ = false;
+    } else {
+      total_no_response++;
+      window.no_response++;
+      this->poll_for_(pending_req_, pending_start_).no_response++;
+    }
     have_last_end_ = false;
   }
 
@@ -303,7 +417,6 @@ class SnifferCore {
     return k;
   }
 
-  /// Statistiche per tipo di richiesta. Registra l'occorrenza solo alla prima chiamata per richiesta.
   PollStat &poll_for_(const std::vector<uint8_t> &req, uint32_t when) {
     PollKey k = key_of_(req);
     for (auto &p : polls) {
@@ -330,14 +443,14 @@ class SnifferCore {
     return polls.back();
   }
 
-  void set_reg_(uint8_t type, uint16_t addr, uint16_t value) {
+  void set_reg_(uint8_t type, uint16_t addr, uint16_t value, uint32_t when) {
     uint32_t key = reg_key(type, addr);
     if (registers.size() >= max_registers && registers.find(key) == registers.end())
       return;
-    registers[key] = value;
+    registers[key] = RegValue{value, when};
   }
 
-  void record_values_(const std::vector<uint8_t> &req, const std::vector<uint8_t> &resp) {
+  void record_values_(const std::vector<uint8_t> &req, const std::vector<uint8_t> &resp, uint32_t when) {
     PollKey k = key_of_(req);
     switch (k.fc) {
       case 0x03:
@@ -345,7 +458,7 @@ class SnifferCore {
         uint8_t type = k.fc == 0x03 ? 3 : 4;
         size_t n = resp[2] / 2;
         for (size_t i = 0; i < n && 3 + 2 * i + 1 < resp.size(); i++)
-          this->set_reg_(type, k.start + i, (uint16_t) ((resp[3 + 2 * i] << 8) | resp[4 + 2 * i]));
+          this->set_reg_(type, k.start + i, (uint16_t) ((resp[3 + 2 * i] << 8) | resp[4 + 2 * i]), when);
         break;
       }
       case 0x01:
@@ -355,19 +468,19 @@ class SnifferCore {
           size_t byte = 3 + i / 8;
           if (byte >= resp.size() - 2)
             break;
-          this->set_reg_(type, k.start + i, (resp[byte] >> (i % 8)) & 1);
+          this->set_reg_(type, k.start + i, (resp[byte] >> (i % 8)) & 1, when);
         }
         break;
       }
       case 0x05:
-        this->set_reg_(1, k.start, req[4] == 0xFF ? 1 : 0);
+        this->set_reg_(1, k.start, req[4] == 0xFF ? 1 : 0, when);
         break;
       case 0x06:
-        this->set_reg_(3, k.start, (uint16_t) ((req[4] << 8) | req[5]));
+        this->set_reg_(3, k.start, (uint16_t) ((req[4] << 8) | req[5]), when);
         break;
       case 0x10: {
         for (uint16_t i = 0; i < k.qty && (size_t) (7 + 2 * i + 1) < req.size() - 2; i++)
-          this->set_reg_(3, k.start + i, (uint16_t) ((req[7 + 2 * i] << 8) | req[8 + 2 * i]));
+          this->set_reg_(3, k.start + i, (uint16_t) ((req[7 + 2 * i] << 8) | req[8 + 2 * i]), when);
         break;
       }
       default:
@@ -407,11 +520,13 @@ class SnifferCore {
   std::vector<uint32_t> times_;
   uint32_t last_rx_{0};
   bool pending_{false};
+  bool pending_ours_{false};
+  bool echo_checked_{true};
   std::vector<uint8_t> pending_req_;
   uint32_t pending_start_{0}, pending_end_{0};
   bool have_last_end_{false};
   uint32_t last_end_{0};
 };
 
-}  // namespace salda_sniffer
+}  // namespace salda_common
 }  // namespace esphome

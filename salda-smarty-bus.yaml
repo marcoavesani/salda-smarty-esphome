@@ -1,0 +1,114 @@
+# =============================================================================
+#  Salda Smarty -> ESPHome -> Home Assistant
+#  VARIANTE BUS CONDIVISO: una sola interfaccia RS485 sulla stessa linea
+#  dell'S-Touch, che resta al suo posto e continua a funzionare.
+#
+#  - I valori che il pannello legge già arrivano "gratis" ascoltando il bus.
+#  - Il resto viene letto, e i comandi inviati, solo nelle pause del pannello
+#    (subito dopo una risposta dell'unità), con transazioni brevi.
+#
+#  Hardware: M5Stack AtomS3 (Lite) + Atomic RS485 Base, in parallelo ai fili
+#  A/B/GND dell'S-Touch. Vedi README.md, sezione "Bus condiviso".
+# =============================================================================
+
+substitutions:
+  name: salda-smarty
+  friendly_name: VMC Salda Smarty
+  # AtomS3 / AtomS3 Lite (ESP32-S3). Per il vecchio Atom Lite (ESP32):
+  # board m5stack-atom, bus_rx GPIO22, bus_tx GPIO19, atom_button GPIO39.
+  board: m5stack-atoms3
+  bus_rx: GPIO5
+  bus_tx: GPIO6
+  atom_button: GPIO41
+  modbus_address: "1"
+  modbus_baud: "19200"
+  modbus_parity: EVEN
+  update_interval: 15s
+
+packages:
+  base: !include packages/base.yaml
+  monitor: !include packages/monitor.yaml
+  controls: !include packages/controls.yaml
+  alarms: !include packages/alarms.yaml
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [salda_bus, salda_common]
+
+uart:
+  id: uart_bus
+  rx_pin: ${bus_rx}
+  tx_pin: ${bus_tx}
+  baud_rate: ${modbus_baud}
+  parity: ${modbus_parity}
+  data_bits: 8
+  stop_bits: 1
+  rx_buffer_size: 1024
+
+salda_bus:
+  id: bus
+  bus_uart_id: uart_bus
+  update_interval: 60s
+  cache_max_age: 10s     # un valore letto dal pannello vale per 10 s
+  budget: 30ms           # durata max di una nostra transazione (pausa minima misurata: 34 ms)
+  max_registers: 4       # registri per lettura
+  idle_time: 600ms       # pannello fermo da tanto (es. nei menu): bus libero
+  local_expire: 4s       # deve restare sotto send_wait_time qui sotto
+  panel_connected:
+    name: Pannello S-Touch attivo
+  panel_transactions:
+    name: Transazioni pannello
+  gap_min:
+    name: Pausa minima bus
+  cache_hits:
+    name: Letture dalla cache
+    disabled_by_default: true
+  own_transactions:
+    name: Transazioni ESP
+    disabled_by_default: true
+  retries:
+    name: Ritrasmissioni ESP
+  failures:
+    name: Richieste ESP fallite
+
+# Il componente modbus parla con la UART virtuale di salda_bus.
+modbus:
+  id: modbus_bus
+  uart_id: bus
+  send_wait_time: 5000ms
+
+modbus_controller:
+  - id: smarty
+    modbus_id: modbus_bus
+    address: ${modbus_address}
+    update_interval: ${update_interval}
+    command_throttle: 20ms
+    max_cmd_retries: 1
+    offline_skip_updates: 2
+
+button:
+  - platform: template
+    name: Elenco richieste pannello
+    icon: mdi:format-list-bulleted
+    entity_category: diagnostic
+    on_press:
+      - lambda: id(bus).dump_polls();
+  - platform: template
+    name: Valori in cache
+    icon: mdi:table
+    entity_category: diagnostic
+    on_press:
+      - lambda: id(bus).dump_registers();
+
+# Pulsante dell'Atom: stampa nel log l'elenco delle richieste del pannello
+binary_sensor:
+  - platform: gpio
+    id: atom_button
+    pin:
+      number: ${atom_button}
+      inverted: true
+    internal: true
+    on_press:
+      - lambda: id(bus).dump_polls();

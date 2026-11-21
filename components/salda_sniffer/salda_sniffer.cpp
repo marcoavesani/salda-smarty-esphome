@@ -6,30 +6,12 @@
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
 
+#include "../salda_common/sniffer_log.h"
+
 namespace esphome {
 namespace salda_sniffer {
 
 static const char *const TAG = "salda_sniffer";
-
-static const char *table_name(uint8_t fc) {
-  switch (fc) {
-    case 0x01: case 0x05: case 0x0F: return "COIL";
-    case 0x02: return "DI";
-    case 0x03: case 0x06: case 0x10: return "HR";
-    case 0x04: return "IR";
-    default: return "?";
-  }
-}
-
-static const char *type_name(uint8_t type) {
-  switch (type) {
-    case 1: return "COIL";
-    case 2: return "DI";
-    case 3: return "HR";
-    case 4: return "IR";
-    default: return "?";
-  }
-}
 
 void SaldaSniffer::setup() {
   // Il riconoscimento dei frame e la misura delle pause richiedono un loop frequente.
@@ -50,20 +32,7 @@ void SaldaSniffer::loop() {
     this->log_writes_();
 }
 
-void SaldaSniffer::log_writes_() {
-  for (const auto &w : this->core_.writes) {
-    std::string vals;
-    for (size_t i = 0; i < w.values.size() && i < 16; i++) {
-      if (i)
-        vals += ",";
-      vals += to_string(w.values[i]);
-    }
-    ESP_LOGI(TAG, "Scrittura vista: FC%02X %s %u%s = %s (%s)", w.fc, table_name(w.fc), w.start,
-             w.qty > 1 ? ("+" + to_string(w.qty - 1)).c_str() : "", vals.c_str(),
-             w.confirmed ? "confermata dall'unità" : "RIFIUTATA (eccezione)");
-  }
-  this->core_.writes.clear();
-}
+void SaldaSniffer::log_writes_() { salda_common::log_writes(this->core_, TAG); }
 
 void SaldaSniffer::update() {
   uint32_t now = micros();
@@ -128,61 +97,9 @@ void SaldaSniffer::update() {
   w.reset(now);
 }
 
-void SaldaSniffer::dump_polls() {
-  ESP_LOGI(TAG, "Richieste viste (%u tipi diversi, totale transazioni %u, senza risposta %u, eccezioni %u):",
-           (unsigned) this->core_.polls.size(), (unsigned) this->core_.total_transactions,
-           (unsigned) this->core_.total_no_response, (unsigned) this->core_.total_exceptions);
-  for (const auto &p : this->core_.polls) {
-    const auto &k = p.key;
-    if (p.interval.count) {
-      ESP_LOGI(TAG, "  slave %u FC%02X %-4s %4u..%-4u (%3u)  x%-6u ogni %.0f ms (min %.0f, max %.0f)  "
-                    "senza risp. %u, eccezioni %u",
-               k.addr, k.fc, table_name(k.fc), k.start, k.start + (k.qty ? k.qty - 1 : 0), k.qty,
-               (unsigned) p.count, p.interval.avg_us() / 1000.0f, p.interval.min_us / 1000.0f,
-               p.interval.max_us / 1000.0f, (unsigned) p.no_response, (unsigned) p.exceptions);
-    } else {
-      ESP_LOGI(TAG, "  slave %u FC%02X %-4s %4u..%-4u (%3u)  x%-6u  senza risp. %u, eccezioni %u", k.addr, k.fc,
-               table_name(k.fc), k.start, k.start + (k.qty ? k.qty - 1 : 0), k.qty, (unsigned) p.count,
-               (unsigned) p.no_response, (unsigned) p.exceptions);
-    }
-  }
-}
+void SaldaSniffer::dump_polls() { salda_common::log_polls(this->core_, TAG); }
 
-void SaldaSniffer::dump_registers() {
-  ESP_LOGI(TAG, "Valori visti (%u):", (unsigned) this->core_.registers.size());
-  // Una riga per gruppo di 8 registri consecutivi dello stesso tipo.
-  std::string line;
-  int line_type = -1;
-  int line_start = -1;
-  int last_addr = -2;
-  auto flush = [&]() {
-    if (!line.empty())
-      ESP_LOGI(TAG, "  %-4s %4d: %s", type_name((uint8_t) line_type), line_start, line.c_str());
-    line.clear();
-  };
-  int count = 0;
-  for (const auto &kv : this->core_.registers) {
-    int type = (int) (kv.first >> 16);
-    int addr = (int) (kv.first & 0xFFFF);
-    if (type != line_type || addr != last_addr + 1 || count >= 8) {
-      flush();
-      line_type = type;
-      line_start = addr;
-      count = 0;
-    }
-    char part[24];
-    // valore grezzo e, per i registri, interpretazione con segno (utile per temperature x0,1)
-    if (type == 3 || type == 4)
-      snprintf(part, sizeof(part), "%u(%d) ", kv.second, (int16_t) kv.second);
-    else
-      snprintf(part, sizeof(part), "%u ", kv.second);
-    line += part;
-    last_addr = addr;
-    count++;
-    delay(0);
-  }
-  flush();
-}
+void SaldaSniffer::dump_registers() { salda_common::log_registers(this->core_, TAG, micros()); }
 
 void SaldaSniffer::reset_stats() {
   SnifferCore fresh;
