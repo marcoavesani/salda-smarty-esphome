@@ -73,7 +73,7 @@ bool SaldaBus::read_array(uint8_t *data, size_t len) {
   return true;
 }
 
-int SaldaBus::available() { return (int) this->core_.to_local.size(); }
+SaldaBus::AvailableT SaldaBus::available() { return (AvailableT) this->core_.to_local.size(); }
 
 // ---- Diagnostica ------------------------------------------------------------
 

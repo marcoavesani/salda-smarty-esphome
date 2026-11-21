@@ -43,7 +43,7 @@ void SaldaProxy::transmit_(uart::UARTComponent *port, std::vector<uint8_t> &fram
   // Alcuni transceiver con commutazione automatica rimandano indietro quanto trasmesso:
   // scarta al massimo tanti byte quanti ne abbiamo appena inviati (la risposta non può
   // essere già arrivata, l'altro lato deve prima rispettare il silenzio di fine frame).
-  size_t echo = std::min<size_t>((size_t) std::max(port->available(), 0), frame.size());
+  size_t echo = std::min<size_t>((size_t) port->available(), frame.size());
   uint8_t sink;
   while (echo-- > 0)
     port->read_byte(&sink);
@@ -87,7 +87,7 @@ bool SaldaProxy::read_array(uint8_t *data, size_t len) {
   return true;
 }
 
-int SaldaProxy::available() { return (int) this->core_.to_local.size(); }
+SaldaProxy::AvailableT SaldaProxy::available() { return (AvailableT) this->core_.to_local.size(); }
 
 // ---- Diagnostica ------------------------------------------------------------
 

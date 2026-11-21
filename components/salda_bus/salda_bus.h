@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
 #include "esphome/components/uart/uart_component.h"
@@ -49,8 +51,17 @@ class SaldaBus : public PollingComponent, public uart::UARTComponent {
   void write_array(const uint8_t *data, size_t len) override;
   bool peek_byte(uint8_t *data) override;
   bool read_array(uint8_t *data, size_t len) override;
-  int available() override;
-  void flush() override {}
+  // I tipi di ritorno sono cambiati tra le versioni di ESPHome (int/void fino al
+  // 2025.x, size_t/UARTFlushResult dal 2026.x): li ricaviamo dalla classe base.
+  using AvailableT = decltype(std::declval<uart::UARTComponent &>().available());
+  using FlushT = decltype(std::declval<uart::UARTComponent &>().flush());
+  AvailableT available() override;
+  // Niente da attendere: i byte passano subito al core. FlushT() vale void oppure
+  // UART_FLUSH_RESULT_SUCCESS (primo valore dell'enum).
+  FlushT flush() override { return FlushT(); }
+#if defined(USE_ESP8266) || defined(USE_ESP32)
+  void load_settings(bool dump_config) override {}
+#endif
 
  protected:
   void check_logger_conflict() override {}
