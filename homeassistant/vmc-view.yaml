@@ -185,6 +185,7 @@ sections:
     line_width: 2
     height: 130
     show:
+      state: false
       fill: false
       points: false
       legend: true

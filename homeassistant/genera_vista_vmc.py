@@ -114,7 +114,7 @@ grafico = {
     "points_per_hour": 4,
     "line_width": 2,
     "height": 130,
-    "show": {"fill": False, "points": False, "legend": True, "labels": False},
+    "show": {"state": False, "fill": False, "points": False, "legend": True, "labels": False},
     "grid_options": {"columns": "full"},
     "entities": [
         {"entity": T_EST, "name": "Esterno", "color": "#3ccf91"},
