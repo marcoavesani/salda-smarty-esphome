@@ -1,7 +1,5 @@
 # =============================================================================
 #  Letture (input register, FC04) - stato, temperature, ventilatori, filtri.
-#  "register_count" su alcuni sensori serve solo a "scavalcare" i buchi
-#  così ESPHome legge un blocco unico invece di tante richieste separate.
 # =============================================================================
 
 sensor:
@@ -45,7 +43,6 @@ sensor:
     disabled_by_default: true
     register_type: read
     address: 3
-    register_count: 10   # scavalca IR 4..12 (data/ora interna)
     value_type: U_WORD
     accuracy_decimals: 0
 
@@ -55,7 +52,6 @@ sensor:
     icon: mdi:timer-sand
     register_type: read
     address: 13
-    register_count: 2    # scavalca IR 14
     value_type: U_WORD
     unit_of_measurement: min
     accuracy_decimals: 0
@@ -203,7 +199,6 @@ sensor:
     disabled_by_default: true
     register_type: read
     address: 25
-    register_count: 3    # scavalca IR 26..27 (prossimo evento scheduler)
     value_type: U_WORD
     device_class: carbon_dioxide
     state_class: measurement
@@ -217,7 +212,6 @@ sensor:
     entity_category: diagnostic
     register_type: read
     address: 28
-    register_count: 2    # scavalca IR 29
     value_type: U_WORD
     accuracy_decimals: 0
 
@@ -249,7 +243,6 @@ sensor:
     icon: mdi:fan
     register_type: read
     address: 56
-    register_count: 2    # scavalca IR 57 (uscita AO1 in volt)
     value_type: U_WORD
     unit_of_measurement: rpm
     state_class: measurement
@@ -261,7 +254,6 @@ sensor:
     icon: mdi:fan
     register_type: read
     address: 58
-    register_count: 2    # scavalca IR 59 (pressione condotto)
     value_type: U_WORD
     unit_of_measurement: "%"
     state_class: measurement
@@ -275,7 +267,6 @@ sensor:
     icon: mdi:weather-windy
     register_type: read
     address: 60
-    register_count: 2    # scavalca IR 61
     value_type: U_WORD
     unit_of_measurement: "m³/h"
     device_class: volume_flow_rate
@@ -288,7 +279,6 @@ sensor:
     icon: mdi:fan
     register_type: read
     address: 62
-    register_count: 2    # scavalca IR 63
     value_type: U_WORD
     unit_of_measurement: "%"
     state_class: measurement
