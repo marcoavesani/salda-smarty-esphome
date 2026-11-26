@@ -48,23 +48,21 @@ sections:
     entity: sensor.quadro_elettrico_vmc_salda_smarty_ventilatore_mandata_portata
     name: Ventilatori
     icon: mdi:fan
-  - type: tile
-    entity: number.quadro_elettrico_vmc_salda_smarty_portata_aria
-    name: Portata
-    icon: mdi:fan-chevron-up
+  - type: entities
     grid_options:
       columns: full
-    features: &id001
-    - type: numeric-input
-      style: buttons
-    features_position: inline
+    entities:
+    - entity: number.quadro_elettrico_vmc_salda_smarty_portata_aria
+      name: Portata
   - type: tile
     entity: number.quadro_elettrico_vmc_salda_smarty_setpoint_comfort
     name: Setpoint Comfort
     icon: mdi:thermometer
     grid_options:
       columns: full
-    features: *id001
+    features: &id001
+    - type: numeric-input
+      style: buttons
     features_position: inline
   - type: tile
     entity: number.quadro_elettrico_vmc_salda_smarty_setpoint_economy
@@ -271,6 +269,22 @@ sections:
     entity: number.quadro_elettrico_vmc_salda_smarty_durata_boost
     name: Durata boost
     icon: mdi:timer-cog-outline
+  - type: entities
+    grid_options:
+      columns: full
+    entities:
+    - entity: select.quadro_elettrico_vmc_salda_smarty_blocco_standby
+      name: Blocco standby
+    - entity: number.quadro_elettrico_vmc_salda_smarty_limite_standby_giornaliero
+      name: Standby concesso al giorno
+  - type: tile
+    entity: sensor.quadro_elettrico_vmc_salda_smarty_standby_residuo_oggi
+    name: Standby residuo oggi
+    icon: mdi:timer-off-outline
+  - type: tile
+    entity: binary_sensor.quadro_elettrico_vmc_salda_smarty_standby_bloccato
+    name: Standby bloccato
+    icon: mdi:power-plug-off-outline
   - type: tile
     entity: number.quadro_elettrico_vmc_salda_smarty_setpoint_protezione_edificio
     name: Setpoint protezione edificio

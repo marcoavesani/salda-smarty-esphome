@@ -437,9 +437,9 @@ In Home Assistant il dispositivo compare da solo, in **Impostazioni → Disposit
 
 | Tipo | Entità |
 |---|---|
-| Comandi | **Modalità** (Standby / Protezione edificio / Economy / Comfort, cioè velocità 0–3), **Boost**, **Setpoint Comfort / Economy / Protezione edificio**, Durata boost, Inverno/Estate, Raffrescamento notturno, Protezione secchezza, Portata in base a UR, setpoint UR, **Portata aria** (%) |
+| Comandi | **Modalità** (Standby / Protezione edificio / Economy / Comfort, cioè velocità 0–3), **Boost**, **Setpoint Comfort / Economy / Protezione edificio**, Durata boost, Inverno/Estate, Raffrescamento notturno, Protezione secchezza, Portata in base a UR, setpoint UR, **Portata aria** (%, numero da inserire), **Blocco standby** e **Limite standby giornaliero** |
 | Pulsanti | Reset timer filtri, Reset allarmi, Sincronizza orologio (imposta data/ora dell'unità da HA), Riavvia ESP |
-| Sensori | Stato sistema (testo), Modalità attuale, temperature T1–T4 e mandata richiesta, portata %, giri e m³/h dei due ventilatori, posizione bypass, efficienza recupero, giorni residui filtri, tempo residuo boost, stagione riscaldamento, raffrescamento notturno attivo |
+| Sensori | Stato sistema (testo), Modalità attuale, temperature T1–T4 e mandata richiesta, portata %, giri e m³/h dei due ventilatori, posizione bypass, efficienza recupero, giorni residui filtri, tempo residuo boost, standby residuo oggi, standby bloccato, stagione riscaldamento, raffrescamento notturno attivo |
 | Opzionali (disabilitati) | Umidità/CO₂ mandata e ripresa (solo se i sensori sono installati), temperatura scambiatore |
 | Allarmi | Allarme critico, Avviso attivo, numero allarmi, **Allarmi attivi** (testo con i codici come sull'S-Touch, es. "W14 Sostituire filtri"), più i singoli codici come entità diagnostiche |
 
@@ -448,10 +448,11 @@ Una card di esempio è in [homeassistant/dashboard-card.yaml](homeassistant/dash
 ## Cose da non fare
 
 - Non scrivere i coil **51** (salva EEPROM), **52** (riavvio), **200** (reset di fabbrica), né i registri di servizio **≥ 400**. Questi ultimi sono override delle uscite, tarature e parametri di comunicazione, e vanno sbloccati con password.
-- Il YAML non li espone di proposito.
+- Il YAML non li espone di proposito. L'unica eccezione è il blocco dello Standby (667/668), descritto sotto.
 
 ## Note e limiti noti
 
 - **Boost:** il coil 5 a 1 avvia il boost per la "Durata boost", a 0 lo ferma. È quello che fa l'S-Touch, misurato sul bus, anche se la tabella Salda dice che 0 "non fa nulla".
+- **Standby che torna in Protezione edificio:** di fabbrica l'unità in inverno concede al massimo 60 minuti di Standby al giorno ("Blocco standby" = In inverno, "Limite standby giornaliero" = 60). Finito il tempo torna da sola alla modalità precedente, sia che lo Standby venga da HA sia dall'S-Touch. "Standby residuo oggi" mostra i minuti rimasti. Per spegnerla più a lungo alza il limite (fino a 500 minuti) o metti il blocco su "Mai". Salda consiglia al massimo un'ora di spegnimento ogni 12 in inverno, per evitare condensa e gelo.
 - **IR 15 = 4:** viene mostrato come "Boost". Il significato del valore 4 non è documentato.
 - **Firmware:** la mappa è stabile tra le tabelle MCB 1.21 (2018) e 1.30 (2026) per tutti i registri usati qui.

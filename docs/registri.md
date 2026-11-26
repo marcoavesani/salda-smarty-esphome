@@ -34,6 +34,8 @@ I documenti Salda non sono inclusi nel repository: si scaricano dalla pagina [sa
 | 100..106 | Data/ora (anno 0..99, mese, giorno, riservato, ore, minuti, secondi) | poi coil 2 = 1 | pulsante Sincronizza orologio |
 | 107 | Tempo residuo boost | s | letto dal pannello |
 | 202 | Reset allarmi | 1 = esegui | pulsante |
+| 667 | Blocco Standby (servizio) | 0 Mai, 1 Sempre, 2 In inverno, 3 In estate (def. 2) | select |
+| 668 | Limite Standby al giorno (servizio) | 0..500 min (def. 60) | number |
 
 **Disponibili ma non esposti:**
 
@@ -45,7 +47,7 @@ I documenti Salda non sono inclusi nel repository: si scaricano dalla pagina [sa
 | 210–249 | Ferie | — |
 | 250–309 | Programmazione settimanale: 10 eventi da 6 registri (stato, portata, temperatura, giorni, ora, minuto) | — |
 | 330–390 | Storico allarmi | — |
-| ≥ 400 | Override, tarature, comunicazione (672–677) | Adjuster/Service |
+| ≥ 400 | Override, tarature, comunicazione (672–677); esposti solo 667/668 | Adjuster/Service |
 
 ## Coil (FC01 lettura, FC05 scrittura)
 
@@ -66,6 +68,7 @@ I documenti Salda non sono inclusi nel repository: si scaricano dalla pagina [sa
 | 1 | Stato sistema | 0 Standby, 1 Prot. edificio, 2 Economy, 3 Comfort, 4 Emergenza, 5 Preparazione, 6 Apertura serrande, 7 Boost, 8 Raffr. riscaldatori, 9 Chiusura serrande, 10 Raffr. notturno, 11 Allarme critico, 12 Incendio, 13 Antigelo, 14 Cambio filtri, 15 UR bassa, 16 Sbrinamento DX, 17 Test serranda |
 | 2 / 3 | Versione software / configurazione | — |
 | 13 | Tempo residuo boost | s |
+| 14 | Standby ancora concesso oggi | min |
 | 15 | Modalità corrente | 0..4 |
 | 16 | Portata attuale | % |
 | 17 | Temperatura mandata richiesta | ×0,1 °C |
@@ -89,5 +92,6 @@ I documenti Salda non sono inclusi nel repository: si scaricano dalla pagina [sa
 | 188 | Almeno un allarme critico |
 | 189 | Almeno un avviso |
 | 207 | Stagione: 1 riscaldamento, 0 raffrescamento |
+| 208 | Standby bloccato (tempo concesso esaurito) |
 | 209 | Raffrescamento notturno attivo |
 | 310 | Bypass chiuso |

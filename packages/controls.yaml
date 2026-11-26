@@ -2,6 +2,7 @@
 #  Comandi (holding register FC03/FC06, coil FC01/FC05).
 #  Le scritture vanno nella RAM del controller come quelle dell'S-Touch.
 #  Non usare mai i coil 51 (salva EEPROM), 52 (riavvio), 200 (reset fabbrica).
+#  Gli unici registri di servizio (>= 400) scritti sono 667/668, blocco Standby.
 # =============================================================================
 
 select:
@@ -30,6 +31,24 @@ select:
       "Inverno": 1
       "Da calendario": 2
       "Media esterna 3 giorni": 3
+
+  # Blocco dello Standby (registri di servizio 667/668, manuale §1.20): di fabbrica
+  # l'unità in inverno resta in Standby al massimo 60 minuti al giorno, poi torna
+  # da sola alla modalità precedente. Salda consiglia di non tenerla spenta più
+  # di un'ora ogni 12 in inverno (condensa e gelo nello scambiatore e nei condotti).
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Blocco standby
+    icon: mdi:power-plug-off-outline
+    entity_category: config
+    address: 667
+    skip_updates: 5
+    value_type: U_WORD
+    optionsmap:
+      "Mai": 0
+      "Sempre": 1
+      "In inverno": 2
+      "In estate": 3
 
 number:
   - platform: modbus_controller
@@ -89,7 +108,21 @@ number:
     max_value: 100
     step: 1
     unit_of_measurement: "%"
-    mode: slider
+    mode: box
+
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Limite standby giornaliero
+    icon: mdi:timer-off-outline
+    entity_category: config
+    address: 668
+    skip_updates: 5
+    value_type: U_WORD
+    min_value: 0
+    max_value: 500
+    step: 1
+    unit_of_measurement: min
+    mode: box
 
   - platform: modbus_controller
     modbus_controller_id: smarty

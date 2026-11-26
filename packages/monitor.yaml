@@ -58,6 +58,17 @@ sensor:
     filters:
       - multiply: 0.0166667
 
+  # Minuti di Standby ancora concessi oggi dal blocco Standby (HR667/HR668).
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Standby residuo oggi
+    icon: mdi:timer-off-outline
+    register_type: read
+    address: 14
+    value_type: U_WORD
+    unit_of_measurement: min
+    accuracy_decimals: 0
+
   - platform: modbus_controller
     modbus_controller_id: smarty
     id: ir_current_mode
@@ -397,6 +408,14 @@ binary_sensor:
     register_type: discrete_input
     address: 207
     skip_updates: 5
+
+  # Lo Standby è bloccato: l'unità rifiuta lo Standby e resta nella modalità precedente.
+  - platform: modbus_controller
+    modbus_controller_id: smarty
+    name: Standby bloccato
+    icon: mdi:power-plug-off-outline
+    register_type: discrete_input
+    address: 208
 
   - platform: modbus_controller
     modbus_controller_id: smarty

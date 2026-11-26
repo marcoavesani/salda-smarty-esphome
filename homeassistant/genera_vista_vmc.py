@@ -56,6 +56,12 @@ TOGGLE = [{"type": "toggle"}]
 SELECT = [{"type": "select-options"}]
 
 
+def rows(*entities):
+    """Card entities: i number in modalità "box" diventano un campo in cui scrivere il valore."""
+    return {"type": "entities", "grid_options": {"columns": "full"},
+            "entities": [{"entity": ent, "name": name} for ent, name in entities]}
+
+
 def label(entity, left, top, size, anchor="left", color="var(--primary-text-color)", weight=600, prefix=None):
     transform = {"left": "translate(0, -50%)", "center": "translate(-50%, -50%)", "right": "translate(-100%, -50%)"}
     el = {
@@ -147,8 +153,7 @@ view = {
                 tile(e("switch", "boost"), "Boost", "mdi:fan-plus", full=True, features=TOGGLE, inline=True),
                 tile(e("sensor", "boost_tempo_residuo"), "Boost residuo", "mdi:timer-sand"),
                 tile(e("sensor", "ventilatore_mandata_portata"), "Ventilatori", "mdi:fan"),
-                tile(e("number", "portata_aria"), "Portata", "mdi:fan-chevron-up", full=True,
-                     features=NUMBER_BUTTONS, inline=True),
+                rows((e("number", "portata_aria"), "Portata")),
                 tile(e("number", "setpoint_comfort"), "Setpoint Comfort", "mdi:thermometer", full=True,
                      features=NUMBER_BUTTONS, inline=True),
                 tile(e("number", "setpoint_economy"), "Setpoint Economy", "mdi:thermometer-low", full=True,
@@ -188,6 +193,10 @@ view = {
                      features=SELECT),
                 tile(e("binary_sensor", "stagione_riscaldamento"), "Riscaldamento", "mdi:snowflake-thermometer"),
                 tile(e("number", "durata_boost"), "Durata boost", "mdi:timer-cog-outline"),
+                rows((e("select", "blocco_standby"), "Blocco standby"),
+                     (e("number", "limite_standby_giornaliero"), "Standby concesso al giorno")),
+                tile(e("sensor", "standby_residuo_oggi"), "Standby residuo oggi", "mdi:timer-off-outline"),
+                tile(e("binary_sensor", "standby_bloccato"), "Standby bloccato", "mdi:power-plug-off-outline"),
                 tile(e("number", "setpoint_protezione_edificio"), "Setpoint protezione edificio",
                      "mdi:home-thermometer-outline", full=True, features=NUMBER_BUTTONS, inline=True),
                 tile(e("switch", "raffrescamento_notturno"), "Raffrescamento notturno", "mdi:weather-night",
